@@ -1,0 +1,13 @@
+.env
+.env.local
+__pycache__/
+*.pyc
+*.pyo
+venv/
+*.db
+memory_ai.db
+memory.json
+.vscode/
+.DS_Store
+Thumbs.db
+app.py

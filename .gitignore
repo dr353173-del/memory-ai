@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+*.db
+memory_ai.db
+memory.json
+venv/
+.DS_Store
+Thumbs.db
