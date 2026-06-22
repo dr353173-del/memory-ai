@@ -177,7 +177,7 @@ NAME: Use user's name if you know it
         try:
             full_prompt = f"{system_prompt}\n\nUser: {message}\n\nAssistant:"
             response = client.models.generate_content(
-                model="gemini-flash-latest",
+                model="gemini-2.0-flash-exp",
                 contents=full_prompt
             )
             reply = response.text.strip()
