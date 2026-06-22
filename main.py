@@ -21,6 +21,7 @@ class ChatRequest(BaseModel):
     user_id: str = "deepu"
 
 @app.get("/")
+@app.head("/")
 async def home():
     file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
     return FileResponse(file_path)
