@@ -1,5 +1,4 @@
-# chat.py — Memory AI Pro (Multi-Language Support)
-
+# chat.py — Memory AI Pro (Auto-Fallback + Fast)
 import os
 from google import genai
 from memory import get_memory, save_memory
@@ -19,12 +18,18 @@ else:
     client = None
     print("⚠️ GEMINI_API_KEY not found in .env")
 
+# Models in priority order (fastest + most available first)
+MODELS = [
+    "gemini-2.0-flash-exp",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-8b",
+    "gemini-1.5-pro",
+]
 
 # ═══════════════════════════════════
 #       MEMORY EXTRACT
 # ═══════════════════════════════════
 def extract_memory_from_message(message: str, current_memory: dict) -> dict:
-    """User ke message se information extract karo"""
     updated = {}
     msg_lower = message.lower()
 
@@ -50,8 +55,7 @@ def extract_memory_from_message(message: str, current_memory: dict) -> dict:
 
     # WORK detect
     work_triggers = ["kaam karta", "job hai", "work karta", "i work", "developer",
-                     "engineer", "student", "designer", "teacher", "doctor", "banata hoon",
-                     "i am a", "main ek"]
+                     "engineer", "student", "designer", "teacher", "doctor", "i am a", "main ek"]
     for trigger in work_triggers:
         if trigger in msg_lower:
             updated["work"] = message[:80]
@@ -59,7 +63,7 @@ def extract_memory_from_message(message: str, current_memory: dict) -> dict:
 
     # HOBBY detect
     hobby_triggers = ["hobby", "mujhe pasand", "i like", "i love",
-                      "acha lagta", "enjoy karta", "khelta hoon", "passionate about"]
+                      "acha lagta", "enjoy karta", "khelta hoon"]
     for trigger in hobby_triggers:
         if trigger in msg_lower:
             updated["hobby"] = message[:80]
@@ -75,13 +79,10 @@ def extract_memory_from_message(message: str, current_memory: dict) -> dict:
 
     return updated
 
-
 # ═══════════════════════════════════
 #       MAIN PROCESS FUNCTION
 # ═══════════════════════════════════
 async def process_message(user_id: str, message: str) -> dict:
-    """Main function — message process karo aur reply do"""
-
     # Step 1: Memory load
     memory = get_memory(user_id)
 
@@ -97,92 +98,58 @@ async def process_message(user_id: str, message: str) -> dict:
         memory_saved = True
         print(f"💾 Memory Updated: {new_info}")
 
-    # Step 4: User info text banao
+    # Step 4: User info text
     user_info = []
-    if memory.get("name"):
-        user_info.append(f"- Name: {memory['name']}")
-    if memory.get("age"):
-        user_info.append(f"- Age: {memory['age']}")
-    if memory.get("work"):
-        user_info.append(f"- Work: {memory['work']}")
-    if memory.get("hobby"):
-        user_info.append(f"- Hobby: {memory['hobby']}")
-    if memory.get("favorite_food"):
-        user_info.append(f"- Favorite Food: {memory['favorite_food']}")
+    if memory.get("name"): user_info.append(f"- Name: {memory['name']}")
+    if memory.get("age"): user_info.append(f"- Age: {memory['age']}")
+    if memory.get("work"): user_info.append(f"- Work: {memory['work']}")
+    if memory.get("hobby"): user_info.append(f"- Hobby: {memory['hobby']}")
+    if memory.get("favorite_food"): user_info.append(f"- Favorite Food: {memory['favorite_food']}")
 
-    user_info_text = "\n".join(user_info) if user_info else "No info yet about user"
+    user_info_text = "\n".join(user_info) if user_info else "No info yet"
 
-    # Step 5: SMART MULTI-LANGUAGE SYSTEM PROMPT
-    system_prompt = f"""You are "Memory AI" — a smart, friendly AI assistant who remembers user information.
+    # Step 5: SHORT SMART PROMPT (Fast)
+    system_prompt = f"""You are "Memory AI" by Deepu - friendly assistant who remembers users.
 
-═══════════════════════════════
-👤 USER INFO (REMEMBER THIS)
-═══════════════════════════════
+👤 USER INFO:
 {user_info_text}
 
-═══════════════════════════════
-🌍 LANGUAGE INTELLIGENCE (TOP PRIORITY)
-═══════════════════════════════
-DETECT the language user is typing in, and RESPOND in the EXACT SAME language:
+🌍 RULES:
+- Reply in user's EXACT language (Hindi/English/Hinglish/Punjabi etc)
+- 2-3 lines only (longer if user asks)
+- 1-2 emojis max
+- Use user's name if known
+- Code questions → English with examples
+- Reference saved memory naturally
+- Be warm, friendly, direct, helpful"""
 
-- Hindi (हिंदी) → Reply in pure Hindi
-- English → Reply in pure English  
-- Hinglish (Hindi + English mix) → Reply in Hinglish
-- Punjabi → Reply in Punjabi
-- Marathi / Gujarati / Tamil / Bengali / Telugu → Match user's language
-- Technical / Coding queries → Use clear English
-
-⚠️ NEVER force Hinglish on English speakers!
-⚠️ NEVER force English on Hindi speakers!
-⚠️ Always MATCH the user's language style!
-
-═══════════════════════════════
-🎯 RESPONSE STYLE
-═══════════════════════════════
-TONE: Friendly, casual, warm — like talking to a close friend
-LENGTH: 2-4 lines normally; longer ONLY when user asks for details
-EMOJIS: Use sparingly (1-2 per message max)
-NAME: Use user's name if you know it
-
-═══════════════════════════════
-💡 SPECIAL BEHAVIORS
-═══════════════════════════════
-- Coding/Tech question → Give code + clear explanation in English
-- Personal chat → Be casual, warm, friendly
-- Question about memory → Reference saved info naturally
-- Greeting → Warm welcome using name if known
-- Sad/upset user → Be empathetic and supportive
-- Question about you → You're "Memory AI" built by Deepu
-
-═══════════════════════════════
-✅ DO
-═══════════════════════════════
-- Match user's language PERFECTLY
-- Use saved memory naturally in conversation
-- Be helpful, clear, and direct
-- Show personality and warmth
-
-═══════════════════════════════
-❌ DON'T
-═══════════════════════════════
-- Don't force any specific language
-- Don't use too many emojis
-- Don't give robotic responses
-- Don't ignore user's language preference
-- Don't make responses too long unless asked
-"""
-
-    # Step 6: Gemini reply
+    # Step 6: AUTO-FALLBACK GEMINI CALL
+    reply = None
+    
     if client:
-        try:
-            full_prompt = f"{system_prompt}\n\nUser: {message}\n\nAssistant:"
-            response = client.models.generate_content(
-                model="gemini-2.0-flash-exp",
-                contents=full_prompt
-            )
-            reply = response.text.strip()
-        except Exception as e:
-            print(f"❌ Gemini Error: {e}")
+        full_prompt = f"{system_prompt}\n\nUser: {message}\n\nAssistant:"
+        
+        for model_name in MODELS:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=full_prompt,
+                    config={
+                        "temperature": 0.7,
+                        "max_output_tokens": 250,
+                        "top_p": 0.9
+                    }
+                )
+                reply = response.text.strip()
+                print(f"✅ Reply from: {model_name}")
+                break  # Success! Stop trying
+            except Exception as e:
+                error_msg = str(e)
+                print(f"⚠️ {model_name} failed: {error_msg[:100]}")
+                continue  # Try next model
+        
+        if not reply:
+            print("❌ All models failed, using fallback")
             reply = fallback_reply(message, memory)
     else:
         reply = fallback_reply(message, memory)
@@ -193,12 +160,10 @@ NAME: Use user's name if you know it
         "memory": memory
     }
 
-
 # ═══════════════════════════════════
 #       FALLBACK (No Gemini)
 # ═══════════════════════════════════
 def fallback_reply(message: str, memory: dict) -> str:
-    """Agar Gemini available nahi hai"""
     name = memory.get("name", "")
     greeting = f"Hey {name}! " if name else "Hey! "
     msg_lower = message.lower()
@@ -212,4 +177,4 @@ def fallback_reply(message: str, memory: dict) -> str:
     elif any(w in msg_lower for w in ["thanks", "shukriya", "thank you"]):
         return f"Koi baat nahi {name}! Hamesha yahan hoon! 🙌"
     else:
-        return f"{greeting}Batao, kya help chahiye? 😊"
+        return f"{greeting}Server thoda busy hai, ek second mein try kar! 😊"
