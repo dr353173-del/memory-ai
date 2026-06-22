@@ -20,12 +20,18 @@ class ChatRequest(BaseModel):
     message: str
     user_id: str = "deepu"
 
+# ═══════════════════════════════════
+#       HOME ROUTE (GET + HEAD)
+# ═══════════════════════════════════
 @app.get("/")
 @app.head("/")
 async def home():
     file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
     return FileResponse(file_path)
 
+# ═══════════════════════════════════
+#       CHAT ROUTE
+# ═══════════════════════════════════
 @app.post("/chat")
 async def chat(request: ChatRequest):
     try:
@@ -34,7 +40,11 @@ async def chat(request: ChatRequest):
     except Exception as e:
         return {"error": str(e), "reply": "Kuch problem aa gayi! 😕"}
 
+# ═══════════════════════════════════
+#       MEMORIES ROUTE (GET + HEAD)
+# ═══════════════════════════════════
 @app.get("/memories")
+@app.head("/memories")
 async def memories():
     all_mem = get_all_memories()
     return {"memories": all_mem, "count": len(all_mem)}
@@ -44,6 +54,18 @@ async def remove_memory(user_id: str):
     success = delete_memory(user_id)
     return {"success": success}
 
+# ═══════════════════════════════════
+#       HEALTH CHECK (GET + HEAD)
+# ═══════════════════════════════════
 @app.get("/health")
+@app.head("/health")
 async def health():
     return {"status": "ok", "message": "Memory AI Pro is running! 🚀"}
+
+# ═══════════════════════════════════
+#       PING ROUTES (UptimeRobot)
+# ═══════════════════════════════════
+@app.get("/ping")
+@app.head("/ping")
+async def ping():
+    return {"status": "alive", "message": "pong! 🏓"}
