@@ -1,27 +1,18 @@
-# memory.py — Fixed Version
-
 import sqlite3
 import json
 import os
 
-DB_PATH = "memory_ai.db"
+DB_PATH = "memory.db"
 
-# ═══════════════════════════════════
-#       DATABASE INIT
-# ═══════════════════════════════════
+
 def init_db():
-    """Database aur table banao agar exist nahi karta"""
+    """Database initialize kar"""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS memories (
             user_id TEXT PRIMARY KEY,
-            name TEXT,
-            age TEXT,
-            work TEXT,
-            hobby TEXT,
-            favorite_food TEXT,
-            extra_info TEXT,
+            data TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -30,137 +21,101 @@ def init_db():
     conn.close()
     print("✅ Database Ready!")
 
-# Database initialize karo jab file load ho
-init_db()
 
-
-# ═══════════════════════════════════
-#       GET MEMORY
-# ═══════════════════════════════════
 def get_memory(user_id: str) -> dict:
-    """User ki memory load karo database se"""
+    """User ki memory laao"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT data FROM memories WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        try:
+            return json.loads(row[0])
+        except:
+            return {}
+    return {}
+
+
+def save_memory(user_id: str, memory_data: dict) -> bool:
+    """User ki memory save kar"""
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT user_id, name, age, work, hobby, favorite_food, extra_info
-            FROM memories 
-            WHERE user_id = ?
-        """, (user_id,))
+        data_json = json.dumps(memory_data, ensure_ascii=False)
         
-        row = cursor.fetchone()
-        conn.close()
-
-        if row:
-            return {
-                "user_id": row[0],
-                "name": row[1] or "",
-                "age": row[2] or "",
-                "work": row[3] or "",
-                "hobby": row[4] or "",
-                "favorite_food": row[5] or "",
-                "extra_info": row[6] or ""
-            }
-        else:
-            return {
-                "user_id": user_id,
-                "name": "",
-                "age": "",
-                "work": "",
-                "hobby": "",
-                "favorite_food": "",
-                "extra_info": ""
-            }
-    except Exception as e:
-        print(f"❌ Get Memory Error: {e}")
-        return {"user_id": user_id, "name": "", "age": "", 
-                "work": "", "hobby": "", "favorite_food": "", "extra_info": ""}
-
-
-# ═══════════════════════════════════
-#       SAVE MEMORY
-# ═══════════════════════════════════
-def save_memory(user_id: str, data: dict) -> bool:
-    """User ki memory save/update karo"""
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO memories (user_id, name, age, work, hobby, favorite_food, extra_info, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            INSERT INTO memories (user_id, data, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(user_id) DO UPDATE SET
-                name = COALESCE(NULLIF(excluded.name, ''), memories.name),
-                age = COALESCE(NULLIF(excluded.age, ''), memories.age),
-                work = COALESCE(NULLIF(excluded.work, ''), memories.work),
-                hobby = COALESCE(NULLIF(excluded.hobby, ''), memories.hobby),
-                favorite_food = COALESCE(NULLIF(excluded.favorite_food, ''), memories.favorite_food),
-                extra_info = COALESCE(NULLIF(excluded.extra_info, ''), memories.extra_info),
+                data = excluded.data,
                 updated_at = CURRENT_TIMESTAMP
-        """, (
-            user_id,
-            data.get("name", ""),
-            data.get("age", ""),
-            data.get("work", ""),
-            data.get("hobby", ""),
-            data.get("favorite_food", ""),
-            data.get("extra_info", "")
-        ))
+        """, (user_id, data_json))
+        
         conn.commit()
         conn.close()
         print(f"💾 Memory Saved for {user_id}")
         return True
     except Exception as e:
-        print(f"❌ Save Memory Error: {e}")
+        print(f"❌ Save error: {e}")
         return False
 
 
-# ═══════════════════════════════════
-#       GET ALL MEMORIES
-# ═══════════════════════════════════
 def get_all_memories() -> list:
-    """Saari memories fetch karo (admin ke liye)"""
+    """Saari memories laao"""
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT user_id, name, age, work, hobby, favorite_food, extra_info, updated_at
-            FROM memories
-            ORDER BY updated_at DESC
-        """)
+        cursor.execute("SELECT user_id, data, updated_at FROM memories")
         rows = cursor.fetchall()
         conn.close()
-
+        
         memories = []
         for row in rows:
-            memories.append({
-                "user_id": row[0],
-                "name": row[1] or "",
-                "age": row[2] or "",
-                "work": row[3] or "",
-                "hobby": row[4] or "",
-                "favorite_food": row[5] or "",
-                "extra_info": row[6] or "",
-                "updated_at": row[7] or ""
-            })
+            try:
+                memories.append({
+                    "user_id": row[0],
+                    "data": json.loads(row[1]),
+                    "updated_at": row[2]
+                })
+            except:
+                continue
         return memories
     except Exception as e:
-        print(f"❌ Get All Memories Error: {e}")
+        print(f"❌ Get all error: {e}")
         return []
 
 
-# ═══════════════════════════════════
-#       DELETE MEMORY
-# ═══════════════════════════════════
 def delete_memory(user_id: str) -> bool:
-    """User ki memory delete karo"""
+    """Ek user ki memory delete kar"""
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("DELETE FROM memories WHERE user_id = ?", (user_id,))
         conn.commit()
         conn.close()
-        print(f"🗑️ Memory Deleted for {user_id}")
+        print(f"🗑️ Deleted memory for {user_id}")
         return True
     except Exception as e:
-        print(f"❌ Delete Memory Error: {e}")
+        print(f"❌ Delete error: {e}")
         return False
+
+
+def reset_database() -> bool:
+    """Saari memories delete kar de"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM memories")
+        conn.commit()
+        conn.close()
+        print("🧹 Database cleared!")
+        return True
+    except Exception as e:
+        print(f"❌ Reset error: {e}")
+        return False
+
+
+# Initialize database on import
+init_db()
