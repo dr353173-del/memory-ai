@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from chat import process_message
-from memory import get_all_memories, delete_memory
+from memory import get_all_memories, delete_memory, reset_database
 import os
 
 app = FastAPI(title="Memory AI Pro")
 
+# ✅ CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,7 +22,7 @@ class ChatRequest(BaseModel):
     user_id: str = "deepu"
 
 # ═══════════════════════════════════
-#       HOME ROUTE (GET + HEAD)
+#       HOME ROUTE
 # ═══════════════════════════════════
 @app.get("/")
 @app.head("/")
@@ -41,7 +42,7 @@ async def chat(request: ChatRequest):
         return {"error": str(e), "reply": "Kuch problem aa gayi! 😕"}
 
 # ═══════════════════════════════════
-#       MEMORIES ROUTE (GET + HEAD)
+#       MEMORIES ROUTE
 # ═══════════════════════════════════
 @app.get("/memories")
 @app.head("/memories")
@@ -55,7 +56,16 @@ async def remove_memory(user_id: str):
     return {"success": success}
 
 # ═══════════════════════════════════
-#       HEALTH CHECK (GET + HEAD)
+#       RESET ALL MEMORY
+# ═══════════════════════════════════
+@app.get("/reset-all")
+@app.delete("/reset-all")
+async def reset_all():
+    success = reset_database()
+    return {"success": success, "message": "Sab memory clear ho gayi! 🧹"}
+
+# ═══════════════════════════════════
+#       HEALTH CHECK
 # ═══════════════════════════════════
 @app.get("/health")
 @app.head("/health")
@@ -63,7 +73,7 @@ async def health():
     return {"status": "ok", "message": "Memory AI Pro is running! 🚀"}
 
 # ═══════════════════════════════════
-#       PING ROUTES (UptimeRobot)
+#       PING ROUTE (UptimeRobot)
 # ═══════════════════════════════════
 @app.get("/ping")
 @app.head("/ping")
