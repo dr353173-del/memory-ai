@@ -1,4 +1,4 @@
-const CACHE_NAME = 'memory-ai-v1';
+const CACHE_NAME = 'memory-ai-v2';  // ⬅️ v1 → v2 (change!)
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -7,6 +7,7 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();  // ⬅️ Force update
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(urlsToCache))
@@ -15,11 +16,7 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) return response;
-        return fetch(event.request);
-      })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
 
@@ -30,6 +27,6 @@ self.addEventListener('activate', (event) => {
         cacheNames.filter((name) => name !== CACHE_NAME)
                   .map((name) => caches.delete(name))
       );
-    })
+    }).then(() => self.clients.claim())  // ⬅️ Force activate
   );
 });
