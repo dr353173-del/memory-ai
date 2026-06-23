@@ -1,25 +1,25 @@
 import os
 import asyncio
-from google import genai
+from groq import Groq
 from memory import get_memory, save_memory
 from dotenv import load_dotenv
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-if GEMINI_API_KEY:
-    client = genai.Client(api_key=GEMINI_API_KEY)
-    print("✅ Gemini AI Connected!")
+if GROQ_API_KEY:
+    client = Groq(api_key=GROQ_API_KEY)
+    print("✅ Groq AI Connected! ⚡")
 else:
     client = None
-    print("⚠️ GEMINI_API_KEY missing!")
+    print("⚠️ GROQ_API_KEY missing!")
 
-# ⚡ FAST MODELS ONLY (skip slow ones)
+# ⚡ FAST MODELS (Groq is super fast!)
 MODELS = [
-    "gemini-2.0-flash-lite",   # Fastest ⚡
-    "gemini-2.0-flash",         # Fast backup
-    "gemini-2.5-flash",         # Last resort
+    "llama-3.3-70b-versatile",   # Best & Fast
+    "llama-3.1-8b-instant",       # Backup fast
+    "gemma2-9b-it",               # Last resort
 ]
 
 
@@ -87,42 +87,30 @@ def extract_memory(message: str, memory: dict) -> dict:
     return updated
 
 
-async def call_gemini(prompt: str) -> str:
-    """⚡ Fast call - 1 retry per model, short wait"""
+async def call_groq(prompt: str, system_prompt: str) -> str:
+    """⚡ Super fast Groq call"""
     for model_name in MODELS:
-        for attempt in range(2):
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config={
-                        "temperature": 0.7,
-                        "max_output_tokens": 200,  # Shorter = faster
-                    }
-                )
-                reply = response.text.strip()
-                print(f"✅ {model_name} (attempt {attempt+1})")
-                return reply
+        try:
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=250,
+            )
+            reply = response.choices[0].message.content.strip()
+            print(f"⚡ {model_name} - SUCCESS")
+            return reply
 
-            except Exception as e:
-                err = str(e)
-                if "404" in err:
-                    print(f"❌ {model_name} not available")
-                    break
-                if "429" in err or "RESOURCE_EXHAUSTED" in err:
-                    if attempt < 1:
-                        print(f"⏳ {model_name} rate limit, wait 2s...")
-                        await asyncio.sleep(2)
-                        continue
-                    break
-                if "503" in err or "UNAVAILABLE" in err:
-                    if attempt < 1:
-                        print(f"⏳ {model_name} busy, retry...")
-                        await asyncio.sleep(1)
-                        continue
-                    break
-                print(f"⚠️ {model_name}: {err[:60]}")
-                break
+        except Exception as e:
+            err = str(e)
+            if "rate_limit" in err.lower() or "429" in err:
+                print(f"⏳ {model_name} rate limit, next model...")
+                continue
+            print(f"⚠️ {model_name}: {err[:80]}")
+            continue
     
     return None
 
@@ -147,18 +135,22 @@ async def process_message(user_id: str, message: str) -> dict:
 
     memory_text = "\n".join(info_parts) if info_parts else "No info yet"
 
-    # ⚡ SHORTER PROMPT = FASTER
-    prompt = f"""You are Memory AI by Deepu. Reply in user's language. Be short (1-2 lines), friendly, use 1-2 emojis.
+    system_prompt = f"""You are "Memory AI" - a smart friendly AI assistant built by Deepu.
 
-User Info:
+USER'S SAVED INFO:
 {memory_text}
 
-User: {message}
-Reply:"""
+RULES:
+- Reply in user's EXACT language (Hindi/English/Hinglish)
+- Keep replies SHORT (1-3 lines max)
+- Use 1-2 emojis only
+- Use saved info naturally
+- Be warm, friendly, direct
+- Don't repeat user's info unless asked"""
 
     reply = None
     if client:
-        reply = await call_gemini(prompt)
+        reply = await call_groq(message, system_prompt)
 
     if not reply:
         reply = smart_fallback(message, memory)
@@ -182,22 +174,22 @@ def smart_fallback(message: str, memory: dict) -> str:
         return f"Hey {name}! Kaise ho? 😊" if name else "Hey! Kaise ho? 😊"
 
     if any(w in msg for w in ["tum kaun", "who are you", "aap kaun"]):
-        return "Main Memory AI hoon — tera personal AI by Deepu 🤖"
+        return "Main Memory AI hoon — Deepu ka banaya AI 🤖"
 
     if any(w in msg for w in ["mera naam", "my name", "kya naam"]):
-        return f"Tera naam {name} hai! 🧠" if name else "Naam abhi nahi pata. Batao! 😊"
+        return f"Tera naam {name} hai! 🧠" if name else "Naam batao na! 😊"
 
-    if any(w in msg for w in ["mera kaam", "my work", "kya karta", "kaam kya"]):
-        return f"Tu {work} hai! 💼" if work else "Kaam nahi pata. Batao! 😊"
+    if any(w in msg for w in ["mera kaam", "kya karta", "kaam kya"]):
+        return f"Tu {work} hai! 💼" if work else "Kaam batao! 😊"
 
-    if any(w in msg for w in ["meri age", "my age", "kitne saal", "umar"]):
-        return f"Tu {age} saal ka hai! 🎂" if age else "Age nahi pata. Batao! 😊"
+    if any(w in msg for w in ["meri age", "kitne saal", "umar"]):
+        return f"Tu {age} saal ka hai! 🎂" if age else "Age batao! 😊"
 
-    if any(w in msg for w in ["meri hobby", "my hobby", "shauq"]):
-        return f"Teri hobby {hobby} hai! 🎯" if hobby else "Hobby nahi pata. Batao! 😊"
+    if any(w in msg for w in ["meri hobby", "shauq"]):
+        return f"Teri hobby {hobby} hai! 🎯" if hobby else "Hobby batao! 😊"
 
-    if any(w in msg for w in ["mera favourite", "favorite food", "kya khana"]):
-        return f"Tujhe {food} pasand hai! 🍕" if food else "Food nahi pata. Batao! 😊"
+    if any(w in msg for w in ["mera favourite", "kya khana"]):
+        return f"Tujhe {food} pasand hai! 🍕" if food else "Food batao! 😊"
 
     if any(w in msg for w in ["sab batao", "mere baare", "about me"]):
         info = []
@@ -207,13 +199,13 @@ def smart_fallback(message: str, memory: dict) -> str:
         if hobby: info.append(f"Hobby: {hobby}")
         if food: info.append(f"Food: {food}")
         if info:
-            return "Ye sab pata hai:\n" + "\n".join(f"• {i}" for i in info) + " 🧠"
-        return "Tere baare mein kuch nahi pata. Batao! 😊"
+            return "Tere baare mein:\n" + "\n".join(f"• {i}" for i in info) + " 🧠"
+        return "Kuch nahi pata. Batao! 😊"
 
     if any(w in msg for w in ["thanks", "shukriya"]):
         return f"Welcome {name}! 🙌" if name else "Welcome! 🙌"
 
-    if msg in ["ok", "okay", "thik", "accha", "haan", "hmm"]:
-        return "Cool! Aur kuch puchna ho toh batao 😊"
+    if msg in ["ok", "okay", "thik", "accha", "haan"]:
+        return "Cool! Aur batao 😊"
 
-    return f"{name}, AI thoda busy. 5 sec baad try kar! ⏰" if name else "AI busy. 5 sec baad try kar! ⏰"
+    return "AI thoda busy. 5 sec baad try kar! ⏰"
