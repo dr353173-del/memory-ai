@@ -8,7 +8,6 @@ import os
 
 app = FastAPI(title="Memory AI Pro")
 
-# ✅ CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,14 +20,34 @@ class ChatRequest(BaseModel):
     message: str
     user_id: str = "deepu"
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # ═══════════════════════════════════
 #       HOME ROUTE
 # ═══════════════════════════════════
 @app.get("/")
 @app.head("/")
 async def home():
-    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
-    return FileResponse(file_path)
+    return FileResponse(os.path.join(BASE_DIR, "index.html"))
+
+# ═══════════════════════════════════
+#       PWA FILES
+# ═══════════════════════════════════
+@app.get("/manifest.json")
+async def manifest():
+    return FileResponse(os.path.join(BASE_DIR, "manifest.json"), media_type="application/json")
+
+@app.get("/service-worker.js")
+async def service_worker():
+    return FileResponse(os.path.join(BASE_DIR, "service-worker.js"), media_type="application/javascript")
+
+@app.get("/icon-192.png")
+async def icon_192():
+    return FileResponse(os.path.join(BASE_DIR, "icon-192.png"), media_type="image/png")
+
+@app.get("/icon-512.png")
+async def icon_512():
+    return FileResponse(os.path.join(BASE_DIR, "icon-512.png"), media_type="image/png")
 
 # ═══════════════════════════════════
 #       CHAT ROUTE
@@ -55,9 +74,6 @@ async def remove_memory(user_id: str):
     success = delete_memory(user_id)
     return {"success": success}
 
-# ═══════════════════════════════════
-#       RESET ALL MEMORY
-# ═══════════════════════════════════
 @app.get("/reset-all")
 @app.delete("/reset-all")
 async def reset_all():
@@ -65,16 +81,13 @@ async def reset_all():
     return {"success": success, "message": "Sab memory clear ho gayi! 🧹"}
 
 # ═══════════════════════════════════
-#       HEALTH CHECK
+#       HEALTH + PING
 # ═══════════════════════════════════
 @app.get("/health")
 @app.head("/health")
 async def health():
     return {"status": "ok", "message": "Memory AI Pro is running! 🚀"}
 
-# ═══════════════════════════════════
-#       PING ROUTE (UptimeRobot)
-# ═══════════════════════════════════
 @app.get("/ping")
 @app.head("/ping")
 async def ping():
