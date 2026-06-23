@@ -241,7 +241,8 @@ def smart_fallback(message: str, memory: dict) -> str:
         if age: info.append(f"Age: {age}")
         if work: info.append(f"Kaam: {work}")
         if hobby: info.append(f"Hobby: {hobby}")
-        if food: info: info.append(f"Food: {food}")
+        if food:
+            info.append(f"Food: {food}")
         if info:
             return "Ye sab pata hai mujhe:\n" + "\n".join(f"• {i}" for i in info) + " 🧠"
         return "Abhi tere baare mein kuch nahi pata. Batao! 😊"
