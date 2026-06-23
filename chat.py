@@ -15,66 +15,76 @@ else:
     client = None
     print("⚠️ GEMINI_API_KEY missing!")
 
-# Fast models pehle
+# ✅ NEW MODELS (2025 working ones)
 MODELS = [
-    "gemini-1.5-flash-8b",
-    "gemini-1.5-flash",
-    "gemini-2.0-flash-exp",
-    "gemini-1.5-pro",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
 ]
+
 
 def extract_memory(message: str, memory: dict) -> dict:
     updated = {}
     msg_lower = message.lower()
-
-    # Name
-    name_triggers = ["mera naam", "my name is", "i am", "main hoon", "naam hai", "naam deepu", "naam rahul"]
-    for trigger in name_triggers:
-        if trigger in msg_lower:
-            words = message.split()
-            for i, word in enumerate(words):
-                if word.lower() in ["naam", "name", "am", "hoon", "hai"] and i + 1 < len(words):
-                    name = words[i + 1].strip(".,!?")
-                    if len(name) > 1:
-                        updated["name"] = name.capitalize()
-                        break
-
-    # Age
-    if any(t in msg_lower for t in ["meri age", "meri umar", "years old", "saal ka", "my age"]):
-        for word in message.split():
-            if word.isdigit() and 5 <= int(word) <= 100:
-                updated["age"] = word
+    
+    # Multi-line message ko split kar (har line alag process)
+    lines = [line.strip() for line in message.split('\n') if line.strip()]
+    
+    for line in lines:
+        line_lower = line.lower()
+        
+        # Name extraction
+        name_triggers = ["mera naam", "my name is", "naam hai"]
+        for trigger in name_triggers:
+            if trigger in line_lower:
+                words = line.split()
+                for i, word in enumerate(words):
+                    if word.lower() in ["naam", "name", "hai"] and i + 1 < len(words):
+                        name = words[i + 1].strip(".,!?")
+                        if len(name) > 1 and name.isalpha():
+                            updated["name"] = name.capitalize()
+                            break
                 break
-
-    # Work
-    work_triggers = ["developer", "engineer", "student", "designer", "teacher", 
-                     "doctor", "kaam karta", "job hai", "work karta", "i work",
-                     "i am a", "main ek", "hoon main", "hoon ek"]
-    for trigger in work_triggers:
-        if trigger in msg_lower:
-            updated["work"] = message[:100]
-            break
-
-    # Hobby
-    hobby_triggers = ["hobby", "mujhe pasand", "i like", "i love", "khelta hoon", "padhna", "gaming"]
-    for trigger in hobby_triggers:
-        if trigger in msg_lower:
-            updated["hobby"] = message[:100]
-            break
-
-    # Food
-    food_triggers = ["favourite food", "favorite food", "khana pasand", "love eating", "pasandida"]
-    for trigger in food_triggers:
-        if trigger in msg_lower:
-            updated["favorite_food"] = message[:100]
-            break
-
+        
+        # Age
+        if any(t in line_lower for t in ["meri age", "meri umar", "saal ka", "my age"]):
+            for word in line.split():
+                if word.isdigit() and 5 <= int(word) <= 100:
+                    updated["age"] = word
+                    break
+        
+        # Work (only short lines)
+        if len(line) < 60:
+            work_keywords = ["developer", "engineer", "student", "designer", 
+                           "teacher", "doctor", "programmer", "freelancer"]
+            for keyword in work_keywords:
+                if keyword in line_lower:
+                    updated["work"] = line[:50]
+                    break
+        
+        # Hobby
+        if len(line) < 60:
+            hobby_triggers = ["mera hobby", "my hobby", "i love", "mujhe pasand hai"]
+            for trigger in hobby_triggers:
+                if trigger in line_lower:
+                    updated["hobby"] = line[:50]
+                    break
+        
+        # Food
+        if len(line) < 60:
+            food_triggers = ["favourite food", "favorite food", "khana pasand", "love eating"]
+            for trigger in food_triggers:
+                if trigger in line_lower:
+                    updated["favorite_food"] = line[:50]
+                    break
+    
     return updated
 
 
 async def call_gemini(prompt: str) -> str:
     for model_name in MODELS:
-        for attempt in range(3):  # 3 retries per model
+        for attempt in range(2):
             try:
                 response = client.models.generate_content(
                     model=model_name,
@@ -90,18 +100,21 @@ async def call_gemini(prompt: str) -> str:
 
             except Exception as e:
                 err = str(e)
-                if "429" in err or "RESOURCE_EXHAUSTED" in err:
+                if "404" in err:
+                    print(f"❌ {model_name} not available")
+                    break
+                if "429" in err:
                     print(f"⏭️ {model_name} quota over")
                     break
                 if "503" in err or "UNAVAILABLE" in err:
-                    if attempt < 2:
-                        print(f"⏳ {model_name} busy, retry {attempt+1}...")
-                        await asyncio.sleep(3)
+                    if attempt < 1:
+                        print(f"⏳ {model_name} busy, retry...")
+                        await asyncio.sleep(2)
                         continue
                     break
-                print(f"⚠️ {model_name}: {err[:60]}")
+                print(f"⚠️ {model_name}: {err[:80]}")
                 break
-
+    
     return None
 
 
@@ -116,7 +129,6 @@ async def process_message(user_id: str, message: str) -> dict:
         memory_saved = True
         print(f"💾 Saved: {new_info}")
 
-    # Memory context banana
     info_parts = []
     if memory.get("name"): info_parts.append(f"Name: {memory['name']}")
     if memory.get("age"): info_parts.append(f"Age: {memory['age']}")
@@ -136,8 +148,8 @@ RULES:
 - 2-3 lines mein reply (jab tak lamba na maange)
 - Max 1-2 emojis
 - Naam pata ho toh use kar
-- Saved info ko naturally use kar conversation mein
-- Helpful, warm aur friendly reh
+- Saved info ko naturally use kar
+- Helpful, warm, friendly reh
 
 User: {message}
 Assistant:"""
@@ -164,9 +176,9 @@ def smart_fallback(message: str, memory: dict) -> str:
     if any(w in msg for w in ["hi", "hello", "hey", "namaste"]):
         return f"Hey {name}! Kaise ho? 😊" if name else "Hey! Kaise ho? 😊"
 
-    if any(w in msg for w in ["kya hoon", "kya ho", "kya karta", "who am i", "ma kya", "mera kaam"]):
+    if any(w in msg for w in ["kya hoon", "kya karta", "who am i", "ma kya", "mera kaam"]):
         if work:
-            return f"Tumhari info mein hai: {work} 💡"
+            return f"Tum {work} ho! Mujhe yaad hai 💡"
         return "Abhi tumhara kaam mujhe nahi pata. Batao na! 😊"
 
     if any(w in msg for w in ["naam", "name", "kaun"]):
@@ -174,14 +186,10 @@ def smart_fallback(message: str, memory: dict) -> str:
             return f"Tumhara naam {name} hai! Mujhe yaad hai 🧠"
         return "Tumhara naam nahi pata abhi. Batao! 😊"
 
-    if any(w in msg for w in ["thanks", "shukriya", "thank"]):
+    if any(w in msg for w in ["thanks", "shukriya"]):
         return f"Welcome {name}! 🙌" if name else "Welcome! 🙌"
 
-    if any(w in msg for w in ["ok", "okay", "thik", "accha"]):
-        return f"Cool! Aur kuch puchna ho toh batao 😊"
+    if any(w in msg for w in ["ok", "okay", "thik"]):
+        return "Cool! Aur kuch puchna ho toh batao 😊"
 
-    if any(w in msg for w in ["aur tum", "tum kaisa", "how are you", "aur aap"]):
-        return "Main ekdum fit hoon! Tera AI hoon na 😄 Tu bata kya chal raha hai?"
-
-    # Default
-    return "Abhi Gemini server thoda busy hai. 30 sec baad try karo! ⏰"
+    return "Server thoda slow hai. 30 sec baad try karo! ⏰"
