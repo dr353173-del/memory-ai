@@ -1,6 +1,4 @@
-# chat.py — Memory AI Pro (Smart Retry + Auto-Fallback)
 import os
-import time
 import asyncio
 from google import genai
 from memory import get_memory, save_memory
@@ -8,168 +6,147 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ═══════════════════════════════════
-#       GEMINI SETUP
-# ═══════════════════════════════════
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if GEMINI_API_KEY:
     client = genai.Client(api_key=GEMINI_API_KEY)
-    print("✅ Gemini AI Connected! (New SDK)")
+    print("✅ Gemini AI Connected!")
 else:
     client = None
-    print("⚠️ GEMINI_API_KEY not found in .env")
+    print("⚠️ GEMINI_API_KEY missing!")
 
-# Models in priority order (fastest + most reliable first)
+# Fast models pehle
 MODELS = [
-    "gemini-1.5-flash-8b",      # Sabse fast + stable
-    "gemini-1.5-flash",          # Backup 1
-    "gemini-2.0-flash-exp",      # Backup 2
-    "gemini-1.5-pro",            # Last resort
+    "gemini-1.5-flash-8b",
+    "gemini-1.5-flash",
+    "gemini-2.0-flash-exp",
+    "gemini-1.5-pro",
 ]
 
-MAX_RETRIES = 2  # Each model 2 baar try karega
-RETRY_DELAY = 2  # 2 second wait between retries
-
-# ═══════════════════════════════════
-#       MEMORY EXTRACT
-# ═══════════════════════════════════
-def extract_memory_from_message(message: str, current_memory: dict) -> dict:
+def extract_memory(message: str, memory: dict) -> dict:
     updated = {}
     msg_lower = message.lower()
 
-    name_triggers = ["mera naam", "my name is", "i am", "main hoon", "naam hai"]
+    # Name
+    name_triggers = ["mera naam", "my name is", "i am", "main hoon", "naam hai", "naam deepu", "naam rahul"]
     for trigger in name_triggers:
         if trigger in msg_lower:
             words = message.split()
             for i, word in enumerate(words):
                 if word.lower() in ["naam", "name", "am", "hoon", "hai"] and i + 1 < len(words):
                     name = words[i + 1].strip(".,!?")
-                    if len(name) > 1 and name.isalpha():
+                    if len(name) > 1:
                         updated["name"] = name.capitalize()
                         break
 
+    # Age
     if any(t in msg_lower for t in ["meri age", "meri umar", "years old", "saal ka", "my age"]):
-        words = message.split()
-        for word in words:
+        for word in message.split():
             if word.isdigit() and 5 <= int(word) <= 100:
                 updated["age"] = word
                 break
 
-    work_triggers = ["kaam karta", "job hai", "work karta", "i work", "developer",
-                     "engineer", "student", "designer", "teacher", "doctor", "i am a", "main ek"]
+    # Work
+    work_triggers = ["developer", "engineer", "student", "designer", "teacher", 
+                     "doctor", "kaam karta", "job hai", "work karta", "i work",
+                     "i am a", "main ek", "hoon main", "hoon ek"]
     for trigger in work_triggers:
         if trigger in msg_lower:
-            updated["work"] = message[:80]
+            updated["work"] = message[:100]
             break
 
-    hobby_triggers = ["hobby", "mujhe pasand", "i like", "i love",
-                      "acha lagta", "enjoy karta", "khelta hoon"]
+    # Hobby
+    hobby_triggers = ["hobby", "mujhe pasand", "i like", "i love", "khelta hoon", "padhna", "gaming"]
     for trigger in hobby_triggers:
         if trigger in msg_lower:
-            updated["hobby"] = message[:80]
+            updated["hobby"] = message[:100]
             break
 
-    food_triggers = ["favourite food", "favorite food", "khana pasand",
-                     "mujhe khana", "pasandida khana", "love eating"]
+    # Food
+    food_triggers = ["favourite food", "favorite food", "khana pasand", "love eating", "pasandida"]
     for trigger in food_triggers:
         if trigger in msg_lower:
-            updated["favorite_food"] = message[:80]
+            updated["favorite_food"] = message[:100]
             break
 
     return updated
 
-# ═══════════════════════════════════
-#       GEMINI CALL WITH RETRY
-# ═══════════════════════════════════
-async def call_gemini_with_retry(full_prompt: str) -> str:
-    """Smart retry — har model ko multiple times try karo"""
-    
+
+async def call_gemini(prompt: str) -> str:
     for model_name in MODELS:
-        for attempt in range(MAX_RETRIES):
+        for attempt in range(3):  # 3 retries per model
             try:
                 response = client.models.generate_content(
                     model=model_name,
-                    contents=full_prompt,
+                    contents=prompt,
                     config={
                         "temperature": 0.7,
-                        "max_output_tokens": 250,
-                        "top_p": 0.9
+                        "max_output_tokens": 300,
                     }
                 )
                 reply = response.text.strip()
-                print(f"✅ Success: {model_name} (attempt {attempt + 1})")
+                print(f"✅ {model_name} (attempt {attempt+1})")
                 return reply
-            
-            except Exception as e:
-                error_msg = str(e)
-                
-                # If quota exceeded (429) → skip this model entirely
-                if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
-                    print(f"⏭️ {model_name} quota exceeded, trying next model")
-                    break  # Try next model
-                
-                # If server busy (503) → retry same model
-                if "503" in error_msg or "UNAVAILABLE" in error_msg:
-                    if attempt < MAX_RETRIES - 1:
-                        print(f"⏳ {model_name} busy, retrying in {RETRY_DELAY}s...")
-                        await asyncio.sleep(RETRY_DELAY)
-                        continue
-                    else:
-                        print(f"❌ {model_name} failed after {MAX_RETRIES} attempts")
-                        break  # Try next model
-                
-                # Any other error → try next model
-                print(f"⚠️ {model_name} error: {error_msg[:80]}")
-                break
-    
-    return None  # All models failed
 
-# ═══════════════════════════════════
-#       MAIN PROCESS FUNCTION
-# ═══════════════════════════════════
+            except Exception as e:
+                err = str(e)
+                if "429" in err or "RESOURCE_EXHAUSTED" in err:
+                    print(f"⏭️ {model_name} quota over")
+                    break
+                if "503" in err or "UNAVAILABLE" in err:
+                    if attempt < 2:
+                        print(f"⏳ {model_name} busy, retry {attempt+1}...")
+                        await asyncio.sleep(3)
+                        continue
+                    break
+                print(f"⚠️ {model_name}: {err[:60]}")
+                break
+
+    return None
+
+
 async def process_message(user_id: str, message: str) -> dict:
     memory = get_memory(user_id)
-    new_info = extract_memory_from_message(message, memory)
+    new_info = extract_memory(message, memory)
     memory_saved = False
 
     if new_info:
-        updated_memory = {**memory, **new_info}
-        save_memory(user_id, updated_memory)
-        memory = updated_memory
+        memory = {**memory, **new_info}
+        save_memory(user_id, memory)
         memory_saved = True
-        print(f"💾 Memory Updated: {new_info}")
+        print(f"💾 Saved: {new_info}")
 
-    user_info = []
-    if memory.get("name"): user_info.append(f"- Name: {memory['name']}")
-    if memory.get("age"): user_info.append(f"- Age: {memory['age']}")
-    if memory.get("work"): user_info.append(f"- Work: {memory['work']}")
-    if memory.get("hobby"): user_info.append(f"- Hobby: {memory['hobby']}")
-    if memory.get("favorite_food"): user_info.append(f"- Favorite Food: {memory['favorite_food']}")
+    # Memory context banana
+    info_parts = []
+    if memory.get("name"): info_parts.append(f"Name: {memory['name']}")
+    if memory.get("age"): info_parts.append(f"Age: {memory['age']}")
+    if memory.get("work"): info_parts.append(f"Work: {memory['work']}")
+    if memory.get("hobby"): info_parts.append(f"Hobby: {memory['hobby']}")
+    if memory.get("favorite_food"): info_parts.append(f"Food: {memory['favorite_food']}")
 
-    user_info_text = "\n".join(user_info) if user_info else "No info yet"
+    memory_text = "\n".join(info_parts) if info_parts else "Koi info nahi abhi"
 
-    system_prompt = f"""You are "Memory AI" by Deepu - friendly assistant who remembers users.
+    prompt = f"""Tu "Memory AI" hai - Deepu ka banaya hua smart AI assistant.
 
-👤 USER INFO:
-{user_info_text}
+USER KI SAVED INFO:
+{memory_text}
 
-🌍 RULES:
-- Reply in user's EXACT language (Hindi/English/Hinglish/Punjabi etc)
-- 2-3 lines only (longer if user asks)
-- 1-2 emojis max
-- Use user's name if known
-- Code questions → English with examples
-- Reference saved memory naturally
-- Be warm, friendly, direct, helpful"""
+RULES:
+- User ki language mein reply kar (Hindi/English/Hinglish)
+- 2-3 lines mein reply (jab tak lamba na maange)
+- Max 1-2 emojis
+- Naam pata ho toh use kar
+- Saved info ko naturally use kar conversation mein
+- Helpful, warm aur friendly reh
+
+User: {message}
+Assistant:"""
 
     reply = None
     if client:
-        full_prompt = f"{system_prompt}\n\nUser: {message}\n\nAssistant:"
-        reply = await call_gemini_with_retry(full_prompt)
-    
+        reply = await call_gemini(prompt)
+
     if not reply:
-        print("❌ All Gemini models failed, using smart fallback")
         reply = smart_fallback(message, memory)
 
     return {
@@ -178,37 +155,33 @@ async def process_message(user_id: str, message: str) -> dict:
         "memory": memory
     }
 
-# ═══════════════════════════════════
-#       SMART FALLBACK
-# ═══════════════════════════════════
-def smart_fallback(message: str, memory: dict) -> str:
-    """Better fallback - context-aware replies"""
-    name = memory.get("name", "")
-    greeting = f"{name}, " if name else ""
-    msg_lower = message.lower()
 
-    # Greetings
-    if any(w in msg_lower for w in ["hello", "hi", "hey", "namaste", "hii"]):
-        return f"Hey {name}! Kaise ho? 😊"
-    
-    # Name questions
-    elif any(w in msg_lower for w in ["mera naam", "my name", "kya naam"]):
+def smart_fallback(message: str, memory: dict) -> str:
+    name = memory.get("name", "")
+    work = memory.get("work", "")
+    msg = message.lower().strip()
+
+    if any(w in msg for w in ["hi", "hello", "hey", "namaste"]):
+        return f"Hey {name}! Kaise ho? 😊" if name else "Hey! Kaise ho? 😊"
+
+    if any(w in msg for w in ["kya hoon", "kya ho", "kya karta", "who am i", "ma kya", "mera kaam"]):
+        if work:
+            return f"Tumhari info mein hai: {work} 💡"
+        return "Abhi tumhara kaam mujhe nahi pata. Batao na! 😊"
+
+    if any(w in msg for w in ["naam", "name", "kaun"]):
         if name:
-            return f"Tumhara naam **{name}** hai! Mujhe yaad hai 🧠✨"
-        return "Abhi tumhara naam nahi pata. Batao na! 😊"
-    
-    # Thanks
-    elif any(w in msg_lower for w in ["thanks", "shukriya", "thank you", "thx"]):
-        return f"Welcome {name}! Hamesha yahan hoon 🙌"
-    
-    # Help / Need help
-    elif any(w in msg_lower for w in ["help", "madad", "need"]):
-        return f"{greeting}bilkul! Batao kya help chahiye? 💪"
-    
-    # OK / Acknowledgment
-    elif msg_lower.strip() in ["ok", "okay", "k", "hmm", "haan", "yes"]:
-        return f"Cool {name}! Aur kuch puchna ho toh batao 😊"
-    
-    # Generic — but contextual
-    else:
-        return f"{greeting}Gemini server pe load zyada hai abhi. 30 second baad try kar! ⏰"
+            return f"Tumhara naam {name} hai! Mujhe yaad hai 🧠"
+        return "Tumhara naam nahi pata abhi. Batao! 😊"
+
+    if any(w in msg for w in ["thanks", "shukriya", "thank"]):
+        return f"Welcome {name}! 🙌" if name else "Welcome! 🙌"
+
+    if any(w in msg for w in ["ok", "okay", "thik", "accha"]):
+        return f"Cool! Aur kuch puchna ho toh batao 😊"
+
+    if any(w in msg for w in ["aur tum", "tum kaisa", "how are you", "aur aap"]):
+        return "Main ekdum fit hoon! Tera AI hoon na 😄 Tu bata kya chal raha hai?"
+
+    # Default
+    return "Abhi Gemini server thoda busy hai. 30 sec baad try karo! ⏰"
