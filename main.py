@@ -1,4 +1,5 @@
 import os
+import json
 import sqlite3
 from datetime import datetime
 from fastapi import FastAPI, Request
@@ -41,6 +42,16 @@ CREATE TABLE IF NOT EXISTS messages (
     created_at TEXT
 )
 """)
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS profile (
+    user_id TEXT PRIMARY KEY,
+    name TEXT,
+    work TEXT,
+    hobby TEXT,
+    food TEXT
+)
+""")
 conn.commit()
 
 # ================= SYSTEM PROMPT =================
@@ -55,35 +66,35 @@ You are a highly professional, intelligent AI assistant like ChatGPT.
 - If user writes in pure Hindi (Devanagari script) → reply in pure Hindi.
 - If user writes in Hinglish (Roman Hindi like "kaise ho", "batao") → reply in Hinglish.
 - NEVER mix languages unless user mixes them.
-- Match user's tone and style automatically.
 
 PROFESSIONAL RULES:
 1. Give structured, detailed answers like ChatGPT.
 2. Use headings, bullet points, numbered lists when needed.
-3. Think step-by-step before answering complex questions.
-4. Never give short lazy answers — always explain properly.
-5. If you don't know something, say honestly.
+3. Think step-by-step before answering.
+4. Never give short lazy answers.
 
 MEMORY RULES:
 1. ALWAYS remember past conversations.
-2. If user told their name, work, hobby, food preference — use it naturally.
-3. You have long-term memory — use previous chat context smartly.
-4. Reference past chats when relevant.
+2. Use user's name, work, hobby, food preference naturally.
+3. Reference past chats when relevant.
 
 PERSONALITY:
 - Friendly but professional.
-- In Hinglish mode, you can use "bhai", "yaar" naturally.
-- In English mode, stay professional like ChatGPT.
-- In Hindi mode, use respectful Hindi.
+- In Hinglish, use "bhai", "yaar" naturally.
+- In English, stay professional.
+- In Hindi, use respectful Hindi.
 
 Built by Deepu. Version 1.0.
 """
 
-# ================= MODEL =================
+# ================= MODELS =================
 
 class ChatRequest(BaseModel):
     user_id: str = "default"
     message: str
+
+class ExtractRequest(BaseModel):
+    user_id: str = "default"
 
 # ================= ROUTES =================
 
@@ -97,7 +108,7 @@ async def manifest():
 
 @app.get("/service-worker.js")
 async def sw():
-    return FileResponse("service-worker.js")
+    return FileResponse("service-worker.js", media_type="application/javascript")
 
 @app.get("/icon-152.png")
 async def icon152():
@@ -163,3 +174,71 @@ async def chat(req: ChatRequest):
 
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/extract-info")
+async def extract_info(req: ExtractRequest):
+    """Extract name, work, hobby, food from chat history"""
+    try:
+        user_id = req.user_id
+
+        cursor.execute("""
+            SELECT role, content FROM messages
+            WHERE user_id = ?
+            ORDER BY id DESC
+            LIMIT 30
+        """, (user_id,))
+        rows = cursor.fetchall()
+        rows.reverse()
+
+        if not rows:
+            return {"name": "", "work": "", "hobby": "", "food": ""}
+
+        chat_text = "\n".join([f"{r[0]}: {r[1]}" for r in rows])
+
+        extract_prompt = f"""
+Analyze this chat history and extract ONLY these 4 things about the USER:
+1. Name
+2. Work / Profession
+3. Hobby
+4. Favorite Food
+
+Reply ONLY in this exact JSON format (no extra text):
+{{"name": "", "work": "", "hobby": "", "food": ""}}
+
+If something is not mentioned, leave it empty "".
+Keep values SHORT (1-3 words max).
+
+Chat history:
+{chat_text}
+"""
+
+        completion = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": "You are a JSON extractor. Reply only with valid JSON."},
+                {"role": "user", "content": extract_prompt}
+            ],
+            temperature=0.1
+        )
+
+        result = completion.choices[0].message.content.strip()
+
+        # Clean response
+        if "```" in result:
+            result = result.split("```")[1].replace("json", "").strip()
+
+        data = json.loads(result)
+
+        # Save to profile
+        cursor.execute("""
+            INSERT OR REPLACE INTO profile (user_id, name, work, hobby, food)
+            VALUES (?, ?, ?, ?, ?)
+        """, (user_id, data.get("name", ""), data.get("work", ""), 
+              data.get("hobby", ""), data.get("food", "")))
+        conn.commit()
+
+        return data
+
+    except Exception as e:
+        return {"name": "", "work": "", "hobby": "", "food": "", "error": str(e)}
