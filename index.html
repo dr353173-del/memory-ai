@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Memory AI Pro</title>
 <link rel="manifest" href="/manifest.json"/>
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
-<meta http-equiv="Pragma" content="no-cache"/>
-<meta http-equiv="Expires" content="0"/>
+<meta name="theme-color" content="#a855f7"/>
+<link rel="apple-touch-icon" href="/icon-192.png"/>
 
 <style>
 * { box-sizing: border-box; }
@@ -108,7 +107,6 @@ header {
   border-radius: 12px;
   cursor: pointer;
   border: 1px solid #1f2937;
-  transition: 0.2s;
 }
 .card:hover { background: #1f2937; }
 .card h3 { margin: 0 0 4px; font-size: 15px; }
@@ -166,7 +164,6 @@ footer {
   color: #6b7280;
 }
 
-/* Name Modal */
 .modal-bg {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.8);
@@ -213,7 +210,6 @@ footer {
 
 <body>
 
-<!-- Name Modal (first time) -->
 <div class="modal-bg" id="nameModal" style="display:none;">
   <div class="modal">
     <h2>👋 Welcome!</h2>
@@ -233,16 +229,16 @@ footer {
   </div>
   <div class="header-btns">
     <button class="voice-toggle" id="voiceToggle" onclick="toggleVoice()">🔊 Voice ON</button>
-    <button class="install-btn" id="installBtn" style="display:none;">⬇ Install App</button>
+    <button class="install-btn" id="installBtn" onclick="installApp()">⬇ Install App</button>
   </div>
 </header>
 
 <div class="chips">
   <div class="chip"><span>🧠 Memories</span> <span id="memCount">0</span></div>
   <div class="chip"><span>👤 Name:</span> <span id="chipName">—</span></div>
-  <div class="chip"><span>💼 Work:</span> —</div>
-  <div class="chip"><span>🎮 Hobby:</span> —</div>
-  <div class="chip"><span>🍔 Food:</span> —</div>
+  <div class="chip"><span>💼 Work:</span> <span id="chipWork">—</span></div>
+  <div class="chip"><span>🎮 Hobby:</span> <span id="chipHobby">—</span></div>
+  <div class="chip"><span>🍔 Food:</span> <span id="chipFood">—</span></div>
 </div>
 
 <div id="chat">
@@ -250,23 +246,18 @@ footer {
     <div class="brain">🧠</div>
     <h2>Hey <em id="welcomeName">there</em>! 👋</h2>
     <p>Main hoon tumhara Memory AI — jo tumhari baatein yaad rakhta hai!</p>
-
     <div class="cards">
       <div class="card" onclick="quick('Mera naam kya hai? Yaad hai?')">
-        <h3>🧠 Test Memory</h3>
-        <p>Check karo yaad hai ya nahi</p>
+        <h3>🧠 Test Memory</h3><p>Check karo yaad hai ya nahi</p>
       </div>
       <div class="card" onclick="quick('Tell me about yourself')">
-        <h3>👋 About AI</h3>
-        <p>AI ke baare mein jaano</p>
+        <h3>👋 About AI</h3><p>AI ke baare mein jaano</p>
       </div>
       <div class="card" onclick="quick('Give me a powerful motivational quote')">
-        <h3>💡 Get Motivated</h3>
-        <p>Powerful quote maango</p>
+        <h3>💡 Get Motivated</h3><p>Powerful quote maango</p>
       </div>
       <div class="card" onclick="quick('What is the future of AI?')">
-        <h3>🚀 AI Future</h3>
-        <p>AI trends jaano</p>
+        <h3>🚀 AI Future</h3><p>AI trends jaano</p>
       </div>
     </div>
   </div>
@@ -283,9 +274,9 @@ footer {
 <script>
 const chatDiv = document.getElementById("chat");
 let voiceEnabled = true;
-
-// ===== NAME SYSTEM =====
 let userName = localStorage.getItem("userName");
+let userId = localStorage.getItem("userId") || "user_" + Date.now();
+localStorage.setItem("userId", userId);
 
 window.addEventListener("load", () => {
   if (!userName) {
@@ -294,6 +285,7 @@ window.addEventListener("load", () => {
     document.getElementById("welcomeName").innerText = userName;
     document.getElementById("chipName").innerText = userName;
   }
+  loadProfile();
 });
 
 function saveName() {
@@ -306,7 +298,6 @@ function saveName() {
   document.getElementById("nameModal").style.display = "none";
 }
 
-// ===== VOICE TOGGLE =====
 function toggleVoice() {
   voiceEnabled = !voiceEnabled;
   const btn = document.getElementById("voiceToggle");
@@ -320,7 +311,6 @@ function toggleVoice() {
   }
 }
 
-// ===== MESSAGES =====
 function addMessage(text, type) {
   const welcome = document.getElementById("welcome");
   if (welcome) welcome.remove();
@@ -346,22 +336,18 @@ async function sendMessage() {
   input.value = "";
   const botDiv = addMessage("...", "bot");
 
-  // Send name as context to AI
   const fullMessage = userName 
-    ? `[User's name is ${userName}] ${message}` 
+    ? `[My name is ${userName}] ${message}` 
     : message;
 
   try {
     const res = await fetch("/chat", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ user_id: userName || "default", message: fullMessage })
+      body: JSON.stringify({ user_id: userId, message: fullMessage })
     });
 
-    if (!res.ok) {
-      botDiv.innerText = "⚠️ Error " + res.status;
-      return;
-    }
+    if (!res.ok) { botDiv.innerText = "⚠️ Error " + res.status; return; }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -375,31 +361,43 @@ async function sendMessage() {
       chatDiv.scrollTop = chatDiv.scrollHeight;
     }
 
-    // Update memory count
     let count = parseInt(localStorage.getItem("memCount") || "0") + 1;
     localStorage.setItem("memCount", count);
     document.getElementById("memCount").innerText = count;
 
     if (voiceEnabled) speak(txt);
+
+    // Auto extract profile info after every 2 messages
+    if (count % 2 === 0) loadProfile();
+
   } catch (e) {
     botDiv.innerText = "⚠️ " + e.message;
   }
 }
 
-// ===== VOICE INPUT =====
+async function loadProfile() {
+  try {
+    const res = await fetch("/extract-info", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ user_id: userId })
+    });
+    const data = await res.json();
+    if (data.name) document.getElementById("chipName").innerText = data.name;
+    if (data.work) document.getElementById("chipWork").innerText = data.work;
+    if (data.hobby) document.getElementById("chipHobby").innerText = data.hobby;
+    if (data.food) document.getElementById("chipFood").innerText = data.food;
+  } catch(e) { console.log("Profile load fail", e); }
+}
+
 function startVoice() {
-  if (!("webkitSpeechRecognition" in window)) {
-    alert("Voice not supported"); return;
-  }
+  if (!("webkitSpeechRecognition" in window)) { alert("Voice not supported"); return; }
   const r = new webkitSpeechRecognition();
   r.lang = "hi-IN";
-  r.onresult = e => {
-    document.getElementById("input").value = e.results[0][0].transcript;
-  };
+  r.onresult = e => { document.getElementById("input").value = e.results[0][0].transcript; };
   r.start();
 }
 
-// ===== VOICE OUTPUT =====
 function speak(text) {
   if (!voiceEnabled) return;
   const s = new SpeechSynthesisUtterance(text);
@@ -409,30 +407,44 @@ function speak(text) {
   if (hindiVoice) s.voice = hindiVoice;
   speechSynthesis.speak(s);
 }
-
 speechSynthesis.onvoiceschanged = () => {};
 
 document.getElementById("input").addEventListener("keypress", e => {
   if (e.key === "Enter") sendMessage();
 });
 
-// Load memory count
 const savedCount = localStorage.getItem("memCount");
 if (savedCount) document.getElementById("memCount").innerText = savedCount;
 
-// ===== PWA INSTALL =====
+/* ===== PWA INSTALL ===== */
 let deferredPrompt;
 window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
   deferredPrompt = e;
   document.getElementById("installBtn").style.display = "block";
 });
-document.getElementById("installBtn").addEventListener("click", async () => {
-  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; }
+
+async function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      document.getElementById("installBtn").style.display = "none";
+    }
+    deferredPrompt = null;
+  } else {
+    alert("App pehle se installed hai ya browser support nahi karta. Chrome menu → Install App try karo.");
+  }
+}
+
+window.addEventListener("appinstalled", () => {
+  document.getElementById("installBtn").style.display = "none";
 });
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/service-worker.js");
+  navigator.serviceWorker.register("/service-worker.js")
+    .then(() => console.log("SW registered"))
+    .catch(err => console.log("SW failed", err));
 }
 </script>
 
