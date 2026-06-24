@@ -2,7 +2,8 @@ import os
 import sqlite3
 from datetime import datetime
 from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse, FileResponse
+from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
 
@@ -10,8 +11,9 @@ from groq import Groq
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 MODEL_NAME = "llama-3.3-70b-versatile"
+
 if not GROQ_API_KEY:
-    raise ValueError("GROQ_API_KEY not set in environment variables")
+    raise ValueError("GROQ_API_KEY not set")
 
 client = Groq(api_key=GROQ_API_KEY)
 
@@ -24,6 +26,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ✅ IMPORTANT — Serve static folder as root
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 # ================= DATABASE =================
 
@@ -46,11 +51,10 @@ conn.commit()
 SYSTEM_PROMPT = """
 You are Memory AI Pro — a professional AI assistant like ChatGPT.
 
-Rules:
 - Respond clearly and professionally
-- Use structured answers with headings when helpful
-- Think step-by-step before answering
-- Use past conversation context
+- Use structured answers
+- Think step-by-step
+- Use previous chat context
 - Avoid unnecessary emojis
 """
 
@@ -74,15 +78,7 @@ def get_recent_messages(user_id, limit=15):
     rows.reverse()
     return [{"role": r[0], "content": r[1]} for r in rows]
 
-# ================= ROUTES =================
-
-@app.get("/", response_class=HTMLResponse)
-async def home():
-    return FileResponse("index.html")
-
-@app.get("/ping")
-def ping():
-    return {"status": "alive"}
+# ================= CHAT API =================
 
 @app.post("/chat")
 async def chat(request: Request):
@@ -94,10 +90,7 @@ async def chat(request: Request):
         if not message:
             return JSONResponse({"error": "Empty message"}, status_code=400)
 
-        # Save user message
         save_message(user_id, "user", message)
-
-        # Load history
         history = get_recent_messages(user_id)
 
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -124,12 +117,14 @@ async def chat(request: Request):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+# ================= FILE UPLOAD =================
+
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
-    os.makedirs("uploads", exist_ok=True)
-    file_path = f"uploads/{file.filename}"
+    os.makedirs("static/uploads", exist_ok=True)
+    file_path = f"static/uploads/{file.filename}"
 
     with open(file_path, "wb") as f:
         f.write(await file.read())
 
-    return {"message": "File uploaded successfully", "filename": file.filename}
+    return {"message": "File uploaded"}
