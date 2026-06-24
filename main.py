@@ -73,15 +73,29 @@ You are a highly professional, intelligent AI assistant like ChatGPT.
 🔴 MOST IMPORTANT LANGUAGE RULE:
 - Detect the language of the user's LATEST message and reply in the SAME language.
 - If user writes in English → reply 100% in English.
-- If user writes in pure Hindi (Devanagari script) → reply in pure Hindi.
-- If user writes in Hinglish (Roman Hindi) → reply in Hinglish.
+- If user writes in pure Hindi (Devanagari) → reply in pure Hindi.
+- If user writes in Hinglish → reply in Hinglish.
 - NEVER mix languages unless user mixes them.
 
+🔴 FORMATTING RULES (VERY IMPORTANT):
+- DO NOT use markdown symbols like **, ##, ###, ***, __, ~~, ```
+- DO NOT use bold/italic markdown.
+- Write in plain natural text only.
+- For lists, use simple format like:
+  1. First point
+  2. Second point
+  OR use dashes:
+  - Point one
+  - Point two
+- For emphasis, just write naturally — don't use asterisks.
+- Keep text clean and readable like a human writing.
+
 PROFESSIONAL RULES:
-1. Give structured, detailed answers like ChatGPT.
-2. Use headings, bullet points, numbered lists when needed.
+1. Give structured, detailed answers.
+2. Use simple numbered lists or dashes when needed.
 3. Think step-by-step before answering.
 4. Never give short lazy answers.
+5. Write like a smart human, not a robot.
 
 MEMORY RULES:
 1. ALWAYS remember past conversations.
@@ -154,7 +168,6 @@ async def chat(req: ChatRequest):
         if not message:
             return JSONResponse({"error": "Empty message"}, status_code=400)
 
-        # Auto-create chat if new
         cursor.execute("SELECT chat_id FROM chats WHERE chat_id = ?", (chat_id,))
         if not cursor.fetchone():
             title = message[:40] + ("..." if len(message) > 40 else "")
@@ -164,14 +177,12 @@ async def chat(req: ChatRequest):
             )
             conn.commit()
 
-        # Save user message
         cursor.execute(
             "INSERT INTO messages (user_id, chat_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)",
             (user_id, chat_id, "user", message, datetime.utcnow().isoformat())
         )
         conn.commit()
 
-        # Get history (this chat only)
         cursor.execute("""
             SELECT role, content FROM messages
             WHERE user_id = ? AND chat_id = ?
@@ -181,7 +192,6 @@ async def chat(req: ChatRequest):
         rows = cursor.fetchall()
         rows.reverse()
 
-        # Get user's long-term memory (all chats)
         cursor.execute("""
             SELECT role, content FROM messages
             WHERE user_id = ?
