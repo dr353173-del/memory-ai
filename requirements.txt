@@ -1,6 +1,4 @@
 fastapi
-uvicorn
+uvicorn[standard]
 groq
-jinja2
 python-multipart
-aiofiles
