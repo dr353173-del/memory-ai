@@ -1,712 +1,104 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory AI Pro</title>
-
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#7c3aed">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Memory AI">
-    <link rel="apple-touch-icon" href="/icon-192.png">
-    <link rel="icon" type="image/png" href="/icon-192.png">
-    <meta name="description" content="Your Personal AI That Remembers Everything">
-
-    <!-- Service Worker -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
-            .then(reg => console.log('✅ PWA Ready!'))
-            .catch(err => console.log('❌ SW failed:', err));
-        });
-      }
-    </script>
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0a0a0a;
-            color: #ffffff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ═══════ HEADER ═══════ */
-        .header {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #2d2d44;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .header-logo {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .header-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .header-title h1 {
-            font-size: 18px;
-            background: linear-gradient(135deg, #7c3aed, #ec4899);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 700;
-        }
-
-        .header-title p {
-            font-size: 11px;
-            color: #888;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-badge {
-            background: rgba(34, 197, 94, 0.15);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            color: #22c55e;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .status-dot {
-            width: 7px;
-            height: 7px;
-            background: #22c55e;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-
-        /* ═══════ MEMORY CARDS BAR ═══════ */
-        .memory-bar {
-            background: #111;
-            padding: 10px 15px;
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            border-bottom: 1px solid #222;
-        }
-
-        .memory-bar::-webkit-scrollbar {
-            display: none;
-        }
-
-        .memory-chip {
-            background: #1e1e30;
-            border: 1px solid #333;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            white-space: nowrap;
-            color: #ccc;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .memory-chip.active {
-            border-color: #7c3aed;
-            color: #fff;
-        }
-
-        .memory-count {
-            background: #7c3aed;
-            color: white;
-            padding: 1px 7px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-
-        /* ═══════ CHAT AREA ═══════ */
-        .chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        /* ═══════ WELCOME SCREEN ═══════ */
-        .welcome-screen {
-            text-align: center;
-            padding: 30px 20px;
-        }
-
-        .welcome-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 15px;
-            border-radius: 20px;
-            overflow: hidden;
-        }
-
-        .welcome-icon img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .welcome-screen h2 {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
-
-        .welcome-screen h2 span {
-            color: #7c3aed;
-        }
-
-        .welcome-screen p {
-            color: #888;
-            font-size: 14px;
-            margin-bottom: 25px;
-        }
-
-        .suggestion-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        .suggestion-card {
-            background: #1a1a2e;
-            border: 1px solid #2d2d44;
-            border-radius: 14px;
-            padding: 16px;
-            text-align: left;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .suggestion-card:hover {
-            border-color: #7c3aed;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2);
-        }
-
-        .suggestion-card .icon {
-            font-size: 22px;
-            margin-bottom: 8px;
-        }
-
-        .suggestion-card h3 {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .suggestion-card p {
-            font-size: 11px;
-            color: #777;
-            margin: 0;
-        }
-
-        /* ═══════ MESSAGES ═══════ */
-        .message {
-            display: flex;
-            gap: 10px;
-            max-width: 85%;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message.user {
-            align-self: flex-end;
-            flex-direction: row-reverse;
-        }
-
-        .message.ai {
-            align-self: flex-start;
-        }
-
-        .avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-
-        .message.user .avatar {
-            background: linear-gradient(135deg, #7c3aed, #ec4899);
-        }
-
-        .message.ai .avatar {
-            background: #2d2d44;
-        }
-
-        .bubble {
-            padding: 12px 16px;
-            border-radius: 18px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .message.user .bubble {
-            background: linear-gradient(135deg, #7c3aed, #6d28d9);
-            border-bottom-right-radius: 4px;
-            color: white;
-        }
-
-        .message.ai .bubble {
-            background: #1e1e30;
-            border: 1px solid #2d2d44;
-            border-bottom-left-radius: 4px;
-            color: #e0e0e0;
-        }
-
-        .memory-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            background: rgba(124, 58, 237, 0.2);
-            border: 1px solid rgba(124, 58, 237, 0.3);
-            color: #a78bfa;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 11px;
-            margin-left: 6px;
-        }
-
-        .timestamp {
-            font-size: 10px;
-            color: #555;
-            margin-top: 4px;
-            text-align: right;
-        }
-
-        .message.ai .timestamp {
-            text-align: left;
-        }
-
-        /* ═══════ INPUT AREA ═══════ */
-        .input-area {
-            padding: 15px 20px;
-            background: #111;
-            border-top: 1px solid #222;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .input-area input {
-            flex: 1;
-            background: #1e1e30;
-            border: 1px solid #333;
-            border-radius: 25px;
-            padding: 12px 20px;
-            color: white;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        .input-area input:focus {
-            border-color: #7c3aed;
-        }
-
-        .input-area input::placeholder {
-            color: #666;
-        }
-
-        .send-btn {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #7c3aed, #ec4899);
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s, opacity 0.2s;
-            flex-shrink: 0;
-        }
-
-        .send-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .send-btn svg {
-            width: 20px;
-            height: 20px;
-            fill: white;
-        }
-
-        /* ═══════ FOOTER ═══════ */
-        .footer {
-            text-align: center;
-            padding: 8px;
-            font-size: 12px;
-            color: #555;
-            background: #0a0a0a;
-        }
-
-        /* ═══════ TYPING INDICATOR ═══════ */
-        .typing {
-            display: none;
-            align-self: flex-start;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .typing-dots {
-            display: flex;
-            gap: 4px;
-            padding: 12px 16px;
-            background: #1e1e30;
-            border: 1px solid #2d2d44;
-            border-radius: 18px;
-        }
-
-        .typing-dots span {
-            width: 8px;
-            height: 8px;
-            background: #7c3aed;
-            border-radius: 50%;
-            animation: bounce 1.4s infinite;
-        }
-
-        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes bounce {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-8px); }
-        }
-
-        /* ═══════ INSTALL BUTTON ═══════ */
-        #installBtn {
-            display: none;
-            position: fixed;
-            top: 12px;
-            right: 12px;
-            background: linear-gradient(135deg, #7c3aed, #ec4899);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 25px;
-            cursor: pointer;
-            z-index: 99999;
-            font-weight: bold;
-            font-size: 13px;
-            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.5);
-            transition: transform 0.2s;
-        }
-
-        #installBtn:hover {
-            transform: scale(1.05);
-        }
-
-        /* ═══════ RESPONSIVE ═══════ */
-        @media (max-width: 600px) {
-            .header { padding: 10px 15px; }
-            .header-title h1 { font-size: 16px; }
-            .chat-container { padding: 15px; }
-            .message { max-width: 90%; }
-            .suggestion-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-            .welcome-screen { padding: 20px 15px; }
-            .welcome-screen h2 { font-size: 20px; }
-        }
-    </style>
+<meta charset="UTF-8" />
+<title>Memory AI Pro</title>
+<style>
+body { font-family: Arial; background: #111; color: white; margin: 0; }
+#chat { height: 80vh; overflow-y: auto; padding: 20px; }
+.message { margin: 10px 0; }
+.user { color: #4fc3f7; }
+.bot { color: #81c784; }
+input { width: 70%; padding: 10px; }
+button { padding: 10px; }
+</style>
 </head>
 <body>
 
-    <!-- Install App Button (PWA) -->
-    <button id="installBtn">📲 Install App</button>
+<h2 style="padding:20px;">Memory AI Pro</h2>
 
-    <!-- ═══════ HEADER ═══════ -->
-    <div class="header">
-        <div class="header-left">
-            <div class="header-logo">
-                <img src="/icon-192.png" alt="Memory AI">
-            </div>
-            <div class="header-title">
-                <h1>Memory AI Pro</h1>
-                <p>by Deepu — v1.0</p>
-            </div>
-        </div>
-        <div class="header-right">
-            <div class="status-badge">
-                <div class="status-dot"></div>
-                Groq Online
-            </div>
-        </div>
-    </div>
+<div id="chat"></div>
 
-    <!-- ═══════ MEMORY BAR ═══════ -->
-    <div class="memory-bar" id="memoryBar">
-        <div class="memory-chip active">
-            🧠 Memories <span class="memory-count" id="memCount">0</span>
-        </div>
-        <div class="memory-chip">👤 Name: <span id="memName">—</span></div>
-        <div class="memory-chip">💼 Work: <span id="memWork">—</span></div>
-        <div class="memory-chip">🎮 Hobby: <span id="memHobby">—</span></div>
-        <div class="memory-chip">🍕 Food: <span id="memFood">—</span></div>
-    </div>
+<div style="padding:20px;">
+<input id="input" placeholder="Type message..." />
+<button onclick="sendMessage()">Send</button>
+<button onclick="startVoice()">🎤</button>
+<input type="file" id="fileInput" />
+<button onclick="uploadFile()">Upload</button>
+</div>
 
-    <!-- ═══════ CHAT AREA ═══════ -->
-    <div class="chat-container" id="chatContainer">
+<script>
+const chatDiv = document.getElementById("chat");
 
-        <!-- Welcome Screen -->
-        <div class="welcome-screen" id="welcomeScreen">
-            <div class="welcome-icon">
-                <img src="/icon-192.png" alt="Memory AI">
-            </div>
-            <h2>Hey <span id="welcomeName">there</span>! 👋</h2>
-            <p>Main hoon tumhara Memory AI — jo tumhari baatein yaad rakhta hai!</p>
+function addMessage(text, className) {
+    const div = document.createElement("div");
+    div.className = "message " + className;
+    div.innerText = text;
+    chatDiv.appendChild(div);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+}
 
-            <div class="suggestion-grid">
-                <div class="suggestion-card" onclick="sendSuggestion('Hi, mera naam batata hoon')">
-                    <div class="icon">👋</div>
-                    <h3>Introduce Yourself</h3>
-                    <p>Apna naam aur kaam batao</p>
-                </div>
-                <div class="suggestion-card" onclick="sendSuggestion('Mera naam kya hai?')">
-                    <div class="icon">🧠</div>
-                    <h3>Test Memory</h3>
-                    <p>Check karo yaad hai ya nahi</p>
-                </div>
-                <div class="suggestion-card" onclick="sendSuggestion('Mujhe motivate karo')">
-                    <div class="icon">💡</div>
-                    <h3>Get Motivated</h3>
-                    <p>Powerful quote maango</p>
-                </div>
-                <div class="suggestion-card" onclick="sendSuggestion('AI ke future ke baare mein batao')">
-                    <div class="icon">🚀</div>
-                    <h3>AI Future</h3>
-                    <p>AI trends jaano</p>
-                </div>
-            </div>
-        </div>
+async function sendMessage() {
+    const input = document.getElementById("input");
+    const message = input.value;
+    if (!message) return;
 
-        <!-- Typing Indicator -->
-        <div class="typing" id="typingIndicator">
-            <div class="avatar">🧠</div>
-            <div class="typing-dots">
-                <span></span><span></span><span></span>
-            </div>
-        </div>
-    </div>
+    addMessage("You: " + message, "user");
+    input.value = "";
 
-    <!-- ═══════ INPUT AREA ═══════ -->
-    <div class="input-area">
-        <input type="text" id="messageInput" placeholder="Kuch bhi pucho ya batao..." autocomplete="off">
-        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        </button>
-    </div>
+    const response = await fetch("/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({user_id: "default", message})
+    });
 
-    <!-- ═══════ FOOTER ═══════ -->
-    <div class="footer">
-        Powered by Groq AI ⚡ + Memory Engine 🧠
-    </div>
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let botText = "";
+    const botDiv = document.createElement("div");
+    botDiv.className = "message bot";
+    chatDiv.appendChild(botDiv);
 
-    <!-- ═══════ JAVASCRIPT ═══════ -->
-    <script>
-        const chatContainer = document.getElementById('chatContainer');
-        const messageInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const typingIndicator = document.getElementById('typingIndicator');
-        const welcomeScreen = document.getElementById('welcomeScreen');
+    while(true) {
+        const {done, value} = await reader.read();
+        if(done) break;
+        const chunk = decoder.decode(value);
+        botText += chunk;
+        botDiv.innerText = "AI: " + botText;
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
 
-        // Load memories on start
-        loadMemories();
+    speak(botText);
+}
 
-        // Enter key to send
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
+function startVoice() {
+    const recognition = new webkitSpeechRecognition();
+    recognition.onresult = function(event) {
+        document.getElementById("input").value =
+            event.results[0][0].transcript;
+    };
+    recognition.start();
+}
 
-        function sendSuggestion(text) {
-            messageInput.value = text;
-            sendMessage();
-        }
+function speak(text) {
+    const speech = new SpeechSynthesisUtterance(text);
+    speechSynthesis.speak(speech);
+}
 
-        async function sendMessage() {
-            const message = messageInput.value.trim();
-            if (!message) return;
+async function uploadFile() {
+    const fileInput = document.getElementById("fileInput");
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
 
-            // Hide welcome screen
-            welcomeScreen.style.display = 'none';
+    await fetch("/upload", {
+        method: "POST",
+        body: formData
+    });
 
-            // Add user message
-            addMessage(message, 'user');
-            messageInput.value = '';
-            sendBtn.disabled = true;
+    alert("File uploaded!");
+}
+</script>
 
-            // Show typing
-            typingIndicator.style.display = 'flex';
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message, user_id: 'deepu' })
-                });
-
-                const data = await response.json();
-
-                // Hide typing
-                typingIndicator.style.display = 'none';
-
-                // Add AI reply
-                addMessage(data.reply, 'ai', data.memory_saved);
-
-                // Update memory bar
-                if (data.memory) {
-                    updateMemoryBar(data.memory);
-                }
-
-                // Reload memories count
-                loadMemories();
-
-            } catch (error) {
-                typingIndicator.style.display = 'none';
-                addMessage('Connection error! Retry karo 😕', 'ai');
-            }
-
-            sendBtn.disabled = false;
-            messageInput.focus();
-        }
-
-        function addMessage(text, type, memorySaved = false) {
-            const now = new Date();
-            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${type}`;
-
-            let memoryBadge = '';
-            if (memorySaved) {
-                memoryBadge = '<span class="memory-badge">🧠 Memory Updated</span>';
-            }
-
-            const avatar = type === 'user' ? '😎' : '🧠';
-
-            msgDiv.innerHTML = `
-                <div class="avatar">${avatar}</div>
-                <div>
-                    <div class="bubble">${text} ${memoryBadge}</div>
-                    <div class="timestamp">${time}</div>
-                </div>
-            `;
-
-            // Insert before typing indicator
-            chatContainer.insertBefore(msgDiv, typingIndicator);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function updateMemoryBar(memory) {
-            if (memory.name) document.getElementById('memName').textContent = memory.name;
-            if (memory.work) document.getElementById('memWork').textContent = memory.work;
-            if (memory.hobby) document.getElementById('memHobby').textContent = memory.hobby;
-            if (memory.favorite_food) document.getElementById('memFood').textContent = memory.favorite_food;
-
-            // Update welcome name
-            if (memory.name) {
-                document.getElementById('welcomeName').textContent = memory.name;
-            }
-        }
-
-        async function loadMemories() {
-            try {
-                const response = await fetch('/memories');
-                const data = await response.json();
-                document.getElementById('memCount').textContent = data.count || 0;
-
-                if (data.memories && data.memories.length > 0) {
-                    const mem = data.memories[0].data;
-                    updateMemoryBar(mem);
-                }
-            } catch (e) {
-                console.log('Memory load error');
-            }
-        }
-
-        // ═══════ PWA INSTALL ═══════
-        let deferredPrompt;
-        const installBtn = document.getElementById('installBtn');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.style.display = 'block';
-        });
-
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    installBtn.style.display = 'none';
-                }
-                deferredPrompt = null;
-            }
-        });
-
-        window.addEventListener('appinstalled', () => {
-            installBtn.style.display = 'none';
-            console.log('✅ App installed!');
-        });
-    </script>
 </body>
 </html>
