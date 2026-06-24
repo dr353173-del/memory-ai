@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Memory AI Pro</title>
-
+<link rel="manifest" href="/manifest.json"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -21,7 +21,6 @@ body {
   flex-direction: column;
 }
 
-/* HEADER */
 header {
   display: flex;
   justify-content: space-between;
@@ -45,14 +44,24 @@ header {
 }
 .logo-text p { font-size: 11px; margin: 0; color: #9ca3af; }
 
-.install-btn {
+.header-btns { display: flex; gap: 8px; align-items: center; }
+
+.install-btn, .voice-toggle {
   padding: 8px 14px;
   border-radius: 8px;
-  background: linear-gradient(90deg, #7c3aed, #2563eb);
   border: none; color: white; cursor: pointer; font-weight: 500;
+  font-size: 13px;
+}
+.install-btn {
+  background: linear-gradient(90deg, #7c3aed, #2563eb);
+}
+.voice-toggle {
+  background: #10b981;
+}
+.voice-toggle.off {
+  background: #ef4444;
 }
 
-/* MEMORY CHIPS */
 .chips {
   display: flex; gap: 10px; padding: 12px 20px;
   flex-wrap: wrap;
@@ -66,7 +75,6 @@ header {
 }
 .chip span { color: #a855f7; font-weight: 600; margin-right: 4px; }
 
-/* CHAT AREA */
 #chat {
   flex: 1;
   overflow-y: auto;
@@ -74,10 +82,8 @@ header {
   display: flex; flex-direction: column;
   gap: 14px;
 }
-.welcome {
-  text-align: center;
-  margin-top: 30px;
-}
+
+.welcome { text-align: center; margin-top: 30px; }
 .brain {
   width: 80px; height: 80px;
   border-radius: 16px;
@@ -86,10 +92,9 @@ header {
   font-size: 36px;
   margin: 0 auto 20px;
 }
-.welcome h2 {
-  font-size: 28px; margin: 0;
-}
-.welcome h2 span {
+.welcome h2 { font-size: 28px; margin: 0; }
+.welcome h2 em {
+  font-style: normal;
   background: linear-gradient(90deg, #facc15, #f97316);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -115,7 +120,6 @@ header {
 .card h3 { margin: 0 0 4px; font-size: 15px; }
 .card p { margin: 0; color: #9ca3af; font-size: 12px; }
 
-/* MESSAGES */
 .message {
   max-width: 75%;
   padding: 12px 16px;
@@ -123,6 +127,7 @@ header {
   line-height: 1.6;
   white-space: pre-wrap;
   font-size: 14px;
+  word-wrap: break-word;
 }
 .user {
   align-self: flex-end;
@@ -133,7 +138,6 @@ header {
   background: #1f2937;
 }
 
-/* INPUT */
 #inputArea {
   display: flex;
   padding: 14px;
@@ -153,8 +157,7 @@ button.send {
   border-radius: 25px;
   border: none;
   background: linear-gradient(90deg, #7c3aed, #2563eb);
-  color: white; cursor: pointer;
-  font-weight: 500;
+  color: white; cursor: pointer; font-weight: 500;
 }
 button.voice {
   border-radius: 50%;
@@ -162,13 +165,14 @@ button.voice {
   border: none;
   background: #1f2937;
   color: white; cursor: pointer;
+  font-size: 18px;
 }
 
 footer {
   text-align: center;
   font-size: 12px;
   padding: 6px;
-  color: #9ca3af;
+  color: #6b7280;
 }
 </style>
 </head>
@@ -183,29 +187,32 @@ footer {
       <p>by Deepu — v1.0</p>
     </div>
   </div>
-  <button class="install-btn" id="installBtn" style="display:none;">⬇ Install App</button>
+  <div class="header-btns">
+    <button class="voice-toggle" id="voiceToggle" onclick="toggleVoice()">🔊 Voice ON</button>
+    <button class="install-btn" id="installBtn" style="display:none;">⬇ Install App</button>
+  </div>
 </header>
 
 <div class="chips">
-  <div class="chip"><span>🧠 Memories</span>0</div>
-  <div class="chip"><span>👤 Name:</span>—</div>
-  <div class="chip"><span>💼 Work:</span>—</div>
-  <div class="chip"><span>🎮 Hobby:</span>—</div>
-  <div class="chip"><span>🍔 Food:</span>—</div>
+  <div class="chip"><span>🧠 Memories</span> 0</div>
+  <div class="chip"><span>👤 Name:</span> —</div>
+  <div class="chip"><span>💼 Work:</span> —</div>
+  <div class="chip"><span>🎮 Hobby:</span> —</div>
+  <div class="chip"><span>🍔 Food:</span> —</div>
 </div>
 
 <div id="chat">
   <div class="welcome" id="welcome">
     <div class="brain">🧠</div>
-    <h2>Hey <span>Deepu</span>! 👋</h2>
+    <h2>Hey <em>Deepu</em>! 👋</h2>
     <p>Main hoon tumhara Memory AI — jo tumhari baatein yaad rakhta hai!</p>
 
     <div class="cards">
-      <div class="card" onclick="quick('Apna naam aur kaam bata du')">
+      <div class="card" onclick="quick('Mera naam Deepu hai, main AI developer hoon')">
         <h3>👋 Introduce Yourself</h3>
         <p>Apna naam aur kaam batao</p>
       </div>
-      <div class="card" onclick="quick('Mujhe test karo memory ka')">
+      <div class="card" onclick="quick('Mera naam kya hai? Yaad hai?')">
         <h3>🧠 Test Memory</h3>
         <p>Check karo yaad hai ya nahi</p>
       </div>
@@ -213,7 +220,7 @@ footer {
         <h3>💡 Get Motivated</h3>
         <p>Powerful quote maango</p>
       </div>
-      <div class="card" onclick="quick('AI ka future kya hai?')">
+      <div class="card" onclick="quick('AI ka future kya hai bhai?')">
         <h3>🚀 AI Future</h3>
         <p>AI trends jaano</p>
       </div>
@@ -231,11 +238,24 @@ footer {
 
 <script>
 const chatDiv = document.getElementById("chat");
+let voiceEnabled = true;
+
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  const btn = document.getElementById("voiceToggle");
+  if (voiceEnabled) {
+    btn.innerText = "🔊 Voice ON";
+    btn.classList.remove("off");
+  } else {
+    btn.innerText = "🔇 Voice OFF";
+    btn.classList.add("off");
+    speechSynthesis.cancel();
+  }
+}
 
 function addMessage(text, type) {
   const welcome = document.getElementById("welcome");
   if (welcome) welcome.remove();
-
   const div = document.createElement("div");
   div.className = "message " + type;
   div.innerText = text;
@@ -282,7 +302,7 @@ async function sendMessage() {
       chatDiv.scrollTop = chatDiv.scrollHeight;
     }
 
-    speak(txt);
+    if (voiceEnabled) speak(txt);
   } catch (e) {
     botDiv.innerText = "⚠️ " + e.message;
   }
@@ -293,7 +313,7 @@ function startVoice() {
     alert("Voice not supported"); return;
   }
   const r = new webkitSpeechRecognition();
-  r.lang = "en-IN";
+  r.lang = "hi-IN";
   r.onresult = e => {
     document.getElementById("input").value = e.results[0][0].transcript;
   };
@@ -301,9 +321,16 @@ function startVoice() {
 }
 
 function speak(text) {
+  if (!voiceEnabled) return;
   const s = new SpeechSynthesisUtterance(text);
+  s.lang = "hi-IN";
+  const voices = speechSynthesis.getVoices();
+  const hindiVoice = voices.find(v => v.lang.includes("hi"));
+  if (hindiVoice) s.voice = hindiVoice;
   speechSynthesis.speak(s);
 }
+
+speechSynthesis.onvoiceschanged = () => {};
 
 document.getElementById("input").addEventListener("keypress", e => {
   if (e.key === "Enter") sendMessage();
@@ -316,11 +343,12 @@ window.addEventListener("beforeinstallprompt", e => {
   document.getElementById("installBtn").style.display = "block";
 });
 document.getElementById("installBtn").addEventListener("click", async () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt = null;
-  }
+  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; }
 });
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js");
+}
 </script>
 
 </body>
