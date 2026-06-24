@@ -1,94 +1,117 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
-from chat import process_message
-from memory import get_all_memories, delete_memory, reset_database
 import os
+import sqlite3
+from datetime import datetime
+from fastapi import FastAPI, Request, UploadFile, File
+from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from groq import Groq
 
-app = FastAPI(title="Memory AI Pro")
+# ========= CONFIG =========
+GROQ_API_KEY = "PASTE_YOUR_GROQ_API_KEY_HERE"
+MODEL_NAME = "llama3-70b-8192"
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+# ========= INIT =========
+app = FastAPI()
+client = Groq(api_key=GROQ_API_KEY)
+
+templates = Jinja2Templates(directory="templates")
+
+os.makedirs("uploads", exist_ok=True)
+
+# ========= DATABASE =========
+conn = sqlite3.connect("memory.db", check_same_thread=False)
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT,
+    role TEXT,
+    content TEXT,
+    created_at TEXT
 )
+""")
+conn.commit()
 
-class ChatRequest(BaseModel):
-    message: str
-    user_id: str = "deepu"
+# ========= HELPERS =========
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SYSTEM_PROMPT = """
+You are Memory AI Pro — a professional AI assistant like ChatGPT.
 
-# ═══════════════════════════════════
-#       HOME ROUTE
-# ═══════════════════════════════════
-@app.get("/")
-@app.head("/")
-async def home():
-    return FileResponse(os.path.join(BASE_DIR, "index.html"))
+Rules:
+- Respond clearly and professionally
+- Use headings and bullet points when useful
+- Give structured answers
+- Think step-by-step
+- Use past conversation context when relevant
+- Avoid unnecessary emojis
+"""
 
-# ═══════════════════════════════════
-#       PWA FILES
-# ═══════════════════════════════════
-@app.get("/manifest.json")
-async def manifest():
-    return FileResponse(os.path.join(BASE_DIR, "manifest.json"), media_type="application/json")
+def save_message(user_id, role, content):
+    cursor.execute(
+        "INSERT INTO messages (user_id, role, content, created_at) VALUES (?, ?, ?, ?)",
+        (user_id, role, content, datetime.utcnow().isoformat())
+    )
+    conn.commit()
 
-@app.get("/service-worker.js")
-async def service_worker():
-    return FileResponse(os.path.join(BASE_DIR, "service-worker.js"), media_type="application/javascript")
+def get_recent_messages(user_id, limit=15):
+    cursor.execute("""
+        SELECT role, content FROM messages
+        WHERE user_id = ?
+        ORDER BY id DESC
+        LIMIT ?
+    """, (user_id, limit))
+    rows = cursor.fetchall()
+    rows.reverse()
+    return [{"role": r[0], "content": r[1]} for r in rows]
 
-@app.get("/icon-192.png")
-async def icon_192():
-    return FileResponse(os.path.join(BASE_DIR, "icon-192.png"), media_type="image/png")
+# ========= ROUTES =========
 
-@app.get("/icon-512.png")
-async def icon_512():
-    return FileResponse(os.path.join(BASE_DIR, "icon-512.png"), media_type="image/png")
-
-# ═══════════════════════════════════
-#       CHAT ROUTE
-# ═══════════════════════════════════
-@app.post("/chat")
-async def chat(request: ChatRequest):
-    try:
-        result = await process_message(request.user_id, request.message)
-        return result
-    except Exception as e:
-        return {"error": str(e), "reply": "Kuch problem aa gayi! 😕"}
-
-# ═══════════════════════════════════
-#       MEMORIES ROUTE
-# ═══════════════════════════════════
-@app.get("/memories")
-@app.head("/memories")
-async def memories():
-    all_mem = get_all_memories()
-    return {"memories": all_mem, "count": len(all_mem)}
-
-@app.delete("/memories/{user_id}")
-async def remove_memory(user_id: str):
-    success = delete_memory(user_id)
-    return {"success": success}
-
-@app.get("/reset-all")
-@app.delete("/reset-all")
-async def reset_all():
-    success = reset_database()
-    return {"success": success, "message": "Sab memory clear ho gayi! 🧹"}
-
-# ═══════════════════════════════════
-#       HEALTH + PING
-# ═══════════════════════════════════
-@app.get("/health")
-@app.head("/health")
-async def health():
-    return {"status": "ok", "message": "Memory AI Pro is running! 🚀"}
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/ping")
-@app.head("/ping")
-async def ping():
-    return {"status": "alive", "message": "pong! 🏓"}
+def ping():
+    return {"status": "alive"}
+
+@app.post("/chat")
+async def chat(request: Request):
+    data = await request.json()
+    user_id = data.get("user_id", "default")
+    message = data.get("message")
+
+    if not message:
+        return JSONResponse({"error": "Empty message"}, status_code=400)
+
+    save_message(user_id, "user", message)
+    history = get_recent_messages(user_id)
+
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages.extend(history)
+    messages.append({"role": "user", "content": message})
+
+    completion = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=messages,
+        temperature=0.7,
+        stream=True
+    )
+
+    async def stream():
+        full_response = ""
+        for chunk in completion:
+            content = chunk.choices[0].delta.content or ""
+            full_response += content
+            yield content
+        save_message(user_id, "assistant", full_response)
+
+    return StreamingResponse(stream(), media_type="text/plain")
+
+@app.post("/upload")
+async def upload(file: UploadFile = File(...)):
+    file_location = f"uploads/{file.filename}"
+    with open(file_location, "wb") as f:
+        f.write(await file.read())
+    return {"filename": file.filename}
