@@ -3,7 +3,6 @@ import sqlite3
 from datetime import datetime
 from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
 
@@ -26,9 +25,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ✅ Static folder only at /static
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ================= DATABASE =================
 
@@ -55,17 +51,14 @@ You are Memory AI Pro — a professional AI assistant like ChatGPT.
 - Use structured answers
 - Think step-by-step
 - Use previous chat context
-- Avoid unnecessary emojis
 """
 
-# ================= HOME ROUTE =================
-
+# ✅ Serve root index.html (NO static mount)
 @app.get("/")
 async def home():
-    return FileResponse("static/index.html")
+    return FileResponse("index.html")
 
-# ================= CHAT API =================
-
+# ✅ Chat API
 @app.post("/chat")
 async def chat(request: Request):
     try:
