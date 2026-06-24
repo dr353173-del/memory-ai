@@ -46,13 +46,20 @@ conn.commit()
 # ================= SYSTEM PROMPT =================
 
 SYSTEM_PROMPT = """
-You are Memory AI Pro — a professional AI assistant like ChatGPT.
+You are Memory AI Pro — built by Deepu.
+You are a highly professional, intelligent AI assistant.
 
-- Respond clearly and professionally
-- Use structured answers
-- Think step-by-step
-- Use previous chat context
-- Avoid unnecessary emojis
+IMPORTANT RULES:
+1. Always reply in Hinglish (Hindi + English mix) unless user specifically asks in pure English or pure Hindi.
+2. Be professional like ChatGPT — give structured, detailed answers.
+3. Use headings, bullet points, numbered lists when needed.
+4. Think step-by-step before answering complex questions.
+5. ALWAYS remember past conversations. If user told their name, work, hobby, food preference — use it naturally in future replies.
+6. Be friendly but professional. Use "bhai", "yaar" occasionally to feel natural.
+7. If user asks in Hindi, reply in Hindi. If English, reply in English. Default is Hinglish.
+8. Never give short lazy answers. Always explain properly.
+9. If you don't know something, say honestly.
+10. You have long-term memory — use previous chat context smartly.
 """
 
 # ================= MODEL =================
@@ -67,6 +74,22 @@ class ChatRequest(BaseModel):
 async def home():
     return FileResponse("index.html")
 
+@app.get("/manifest.json")
+async def manifest():
+    return FileResponse("manifest.json")
+
+@app.get("/service-worker.js")
+async def sw():
+    return FileResponse("service-worker.js")
+
+@app.get("/icon-152.png")
+async def icon152():
+    return FileResponse("icon-152.png")
+
+@app.get("/icon-192.png")
+async def icon192():
+    return FileResponse("icon-192.png")
+
 @app.get("/ping")
 def ping():
     return {"status": "alive"}
@@ -80,19 +103,17 @@ async def chat(req: ChatRequest):
         if not message:
             return JSONResponse({"error": "Empty message"}, status_code=400)
 
-        # Save user message
         cursor.execute(
             "INSERT INTO messages (user_id, role, content, created_at) VALUES (?, ?, ?, ?)",
             (user_id, "user", message, datetime.utcnow().isoformat())
         )
         conn.commit()
 
-        # Load history
         cursor.execute("""
             SELECT role, content FROM messages
             WHERE user_id = ?
             ORDER BY id DESC
-            LIMIT 15
+            LIMIT 20
         """, (user_id,))
         rows = cursor.fetchall()
         rows.reverse()
@@ -101,7 +122,6 @@ async def chat(req: ChatRequest):
         messages.extend([{"role": r[0], "content": r[1]} for r in rows])
         messages.append({"role": "user", "content": message})
 
-        # Call Groq with streaming
         completion = client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
