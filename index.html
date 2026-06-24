@@ -4,29 +4,58 @@
 <meta charset="UTF-8" />
 <title>Memory AI Pro</title>
 
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
+* { box-sizing: border-box; }
+
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
-  background: #0f172a;
+  background: linear-gradient(135deg, #0f172a, #0b1120);
   color: white;
   display: flex;
   flex-direction: column;
   height: 100vh;
 }
 
+/* ===== HEADER ===== */
+
 header {
-  padding: 15px 20px;
-  font-size: 18px;
-  font-weight: 600;
-  background: #111827;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid #1f2937;
 }
+
+.logo {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.install-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #7c3aed, #2563eb);
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.install-btn:hover {
+  opacity: 0.9;
+}
+
+/* ===== CHAT AREA ===== */
 
 #chat {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 25px;
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -34,15 +63,16 @@ header {
 
 .message {
   max-width: 70%;
-  padding: 12px 15px;
+  padding: 12px 16px;
   border-radius: 12px;
-  line-height: 1.5;
+  line-height: 1.6;
   white-space: pre-wrap;
+  font-size: 14px;
 }
 
 .user {
   align-self: flex-end;
-  background: #2563eb;
+  background: linear-gradient(90deg, #2563eb, #1d4ed8);
 }
 
 .bot {
@@ -50,10 +80,12 @@ header {
   background: #1f2937;
 }
 
+/* ===== INPUT AREA ===== */
+
 #inputArea {
   display: flex;
   padding: 15px;
-  background: #111827;
+  background: rgba(15, 23, 42, 0.9);
   border-top: 1px solid #1f2937;
   gap: 10px;
 }
@@ -87,7 +119,8 @@ button:hover {
 <body>
 
 <header>
-  🧠 Memory AI Pro
+  <div class="logo">🧠 Memory AI Pro</div>
+  <button class="install-btn" id="installBtn" style="display:none;">Install App</button>
 </header>
 
 <div id="chat"></div>
@@ -157,8 +190,23 @@ function speak(text) {
 }
 
 document.getElementById("input").addEventListener("keypress", function(e) {
-  if (e.key === "Enter") {
-    sendMessage();
+  if (e.key === "Enter") sendMessage();
+});
+
+/* ===== PWA INSTALL BUTTON ===== */
+
+let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById("installBtn").style.display = "block";
+});
+
+document.getElementById("installBtn").addEventListener("click", async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt = null;
   }
 });
 </script>
