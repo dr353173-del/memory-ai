@@ -2,7 +2,7 @@ import os
 import sqlite3
 from datetime import datetime
 from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
@@ -27,8 +27,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ IMPORTANT — Serve static folder as root
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+# ✅ Static folder only at /static
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ================= DATABASE =================
 
@@ -58,25 +58,11 @@ You are Memory AI Pro — a professional AI assistant like ChatGPT.
 - Avoid unnecessary emojis
 """
 
-# ================= HELPERS =================
+# ================= HOME ROUTE =================
 
-def save_message(user_id, role, content):
-    cursor.execute(
-        "INSERT INTO messages (user_id, role, content, created_at) VALUES (?, ?, ?, ?)",
-        (user_id, role, content, datetime.utcnow().isoformat())
-    )
-    conn.commit()
-
-def get_recent_messages(user_id, limit=15):
-    cursor.execute("""
-        SELECT role, content FROM messages
-        WHERE user_id = ?
-        ORDER BY id DESC
-        LIMIT ?
-    """, (user_id, limit))
-    rows = cursor.fetchall()
-    rows.reverse()
-    return [{"role": r[0], "content": r[1]} for r in rows]
+@app.get("/")
+async def home():
+    return FileResponse("static/index.html")
 
 # ================= CHAT API =================
 
@@ -90,11 +76,23 @@ async def chat(request: Request):
         if not message:
             return JSONResponse({"error": "Empty message"}, status_code=400)
 
-        save_message(user_id, "user", message)
-        history = get_recent_messages(user_id)
+        cursor.execute(
+            "INSERT INTO messages (user_id, role, content, created_at) VALUES (?, ?, ?, ?)",
+            (user_id, "user", message, datetime.utcnow().isoformat())
+        )
+        conn.commit()
+
+        cursor.execute("""
+            SELECT role, content FROM messages
+            WHERE user_id = ?
+            ORDER BY id DESC
+            LIMIT 15
+        """, (user_id,))
+        rows = cursor.fetchall()
+        rows.reverse()
 
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-        messages.extend(history)
+        messages.extend([{"role": r[0], "content": r[1]} for r in rows])
         messages.append({"role": "user", "content": message})
 
         completion = client.chat.completions.create(
@@ -110,21 +108,14 @@ async def chat(request: Request):
                 content = chunk.choices[0].delta.content or ""
                 full_response += content
                 yield content
-            save_message(user_id, "assistant", full_response)
+
+            cursor.execute(
+                "INSERT INTO messages (user_id, role, content, created_at) VALUES (?, ?, ?, ?)",
+                (user_id, "assistant", full_response, datetime.utcnow().isoformat())
+            )
+            conn.commit()
 
         return StreamingResponse(stream(), media_type="text/plain")
 
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
-
-# ================= FILE UPLOAD =================
-
-@app.post("/upload")
-async def upload(file: UploadFile = File(...)):
-    os.makedirs("static/uploads", exist_ok=True)
-    file_path = f"static/uploads/{file.filename}"
-
-    with open(file_path, "wb") as f:
-        f.write(await file.read())
-
-    return {"message": "File uploaded"}
