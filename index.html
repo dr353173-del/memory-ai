@@ -328,6 +328,9 @@ function quick(text) {
 }
 
 async function sendMessage() {
+  // 🔥 STOP previous voice immediately
+  speechSynthesis.cancel();
+
   const input = document.getElementById("input");
   const message = input.value.trim();
   if (!message) return;
@@ -366,8 +369,6 @@ async function sendMessage() {
     document.getElementById("memCount").innerText = count;
 
     if (voiceEnabled) speak(txt);
-
-    // Auto extract profile info after every 2 messages
     if (count % 2 === 0) loadProfile();
 
   } catch (e) {
@@ -391,6 +392,8 @@ async function loadProfile() {
 }
 
 function startVoice() {
+  // Stop AI voice when user wants to speak
+  speechSynthesis.cancel();
   if (!("webkitSpeechRecognition" in window)) { alert("Voice not supported"); return; }
   const r = new webkitSpeechRecognition();
   r.lang = "hi-IN";
@@ -400,6 +403,8 @@ function startVoice() {
 
 function speak(text) {
   if (!voiceEnabled) return;
+  // Cancel any ongoing speech first
+  speechSynthesis.cancel();
   const s = new SpeechSynthesisUtterance(text);
   s.lang = "hi-IN";
   const voices = speechSynthesis.getVoices();
@@ -413,10 +418,14 @@ document.getElementById("input").addEventListener("keypress", e => {
   if (e.key === "Enter") sendMessage();
 });
 
+// Also stop voice when user starts typing
+document.getElementById("input").addEventListener("input", () => {
+  if (speechSynthesis.speaking) speechSynthesis.cancel();
+});
+
 const savedCount = localStorage.getItem("memCount");
 if (savedCount) document.getElementById("memCount").innerText = savedCount;
 
-/* ===== PWA INSTALL ===== */
 let deferredPrompt;
 window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
@@ -433,7 +442,7 @@ async function installApp() {
     }
     deferredPrompt = null;
   } else {
-    alert("App pehle se installed hai ya browser support nahi karta. Chrome menu → Install App try karo.");
+    alert("App pehle se installed hai ya browser support nahi karta.");
   }
 }
 
