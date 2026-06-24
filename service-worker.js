@@ -1,11 +1,7 @@
-const CACHE_NAME = "memory-ai-v3";
-const urlsToCache = ["/", "/manifest.json", "/icon-192.png"];
+const CACHE_NAME = "memory-ai-v4";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
-  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -18,10 +14,12 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.url.includes("/chat") || event.request.url.includes("/extract-info")) {
+  if (event.request.url.includes("/chat") || 
+      event.request.url.includes("/chats") ||
+      event.request.url.includes("/messages") ||
+      event.request.url.includes("/delete-chat") ||
+      event.request.url.includes("/extract-info")) {
     return;
   }
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
-  );
+  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });
