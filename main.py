@@ -37,8 +37,18 @@ cursor.execute("""
 CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT,
+    chat_id TEXT,
     role TEXT,
     content TEXT,
+    created_at TEXT
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS chats (
+    chat_id TEXT PRIMARY KEY,
+    user_id TEXT,
+    title TEXT,
     created_at TEXT
 )
 """)
@@ -64,7 +74,7 @@ You are a highly professional, intelligent AI assistant like ChatGPT.
 - Detect the language of the user's LATEST message and reply in the SAME language.
 - If user writes in English → reply 100% in English.
 - If user writes in pure Hindi (Devanagari script) → reply in pure Hindi.
-- If user writes in Hinglish (Roman Hindi like "kaise ho", "batao") → reply in Hinglish.
+- If user writes in Hinglish (Roman Hindi) → reply in Hinglish.
 - NEVER mix languages unless user mixes them.
 
 PROFESSIONAL RULES:
@@ -75,7 +85,7 @@ PROFESSIONAL RULES:
 
 MEMORY RULES:
 1. ALWAYS remember past conversations.
-2. Use user's name, work, hobby, food preference naturally.
+2. Use user's name, work, hobby, food naturally.
 3. Reference past chats when relevant.
 
 PERSONALITY:
@@ -91,10 +101,22 @@ Built by Deepu. Version 1.0.
 
 class ChatRequest(BaseModel):
     user_id: str = "default"
+    chat_id: str = "default"
     message: str
 
 class ExtractRequest(BaseModel):
     user_id: str = "default"
+
+class ChatListRequest(BaseModel):
+    user_id: str
+
+class DeleteChatRequest(BaseModel):
+    user_id: str
+    chat_id: str
+
+class MessagesRequest(BaseModel):
+    user_id: str
+    chat_id: str
 
 # ================= ROUTES =================
 
@@ -126,27 +148,54 @@ def ping():
 async def chat(req: ChatRequest):
     try:
         user_id = req.user_id
+        chat_id = req.chat_id
         message = req.message
 
         if not message:
             return JSONResponse({"error": "Empty message"}, status_code=400)
 
+        # Auto-create chat if new
+        cursor.execute("SELECT chat_id FROM chats WHERE chat_id = ?", (chat_id,))
+        if not cursor.fetchone():
+            title = message[:40] + ("..." if len(message) > 40 else "")
+            cursor.execute(
+                "INSERT INTO chats (chat_id, user_id, title, created_at) VALUES (?, ?, ?, ?)",
+                (chat_id, user_id, title, datetime.utcnow().isoformat())
+            )
+            conn.commit()
+
+        # Save user message
         cursor.execute(
-            "INSERT INTO messages (user_id, role, content, created_at) VALUES (?, ?, ?, ?)",
-            (user_id, "user", message, datetime.utcnow().isoformat())
+            "INSERT INTO messages (user_id, chat_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)",
+            (user_id, chat_id, "user", message, datetime.utcnow().isoformat())
         )
         conn.commit()
 
+        # Get history (this chat only)
+        cursor.execute("""
+            SELECT role, content FROM messages
+            WHERE user_id = ? AND chat_id = ?
+            ORDER BY id DESC
+            LIMIT 20
+        """, (user_id, chat_id))
+        rows = cursor.fetchall()
+        rows.reverse()
+
+        # Get user's long-term memory (all chats)
         cursor.execute("""
             SELECT role, content FROM messages
             WHERE user_id = ?
             ORDER BY id DESC
-            LIMIT 20
+            LIMIT 10
         """, (user_id,))
-        rows = cursor.fetchall()
-        rows.reverse()
+        memory_rows = cursor.fetchall()
 
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        memory_context = "\n".join([f"{r[0]}: {r[1]}" for r in memory_rows[-5:]])
+
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": f"User's recent memory across all chats:\n{memory_context}"}
+        ]
         messages.extend([{"role": r[0], "content": r[1]} for r in rows])
         messages.append({"role": "user", "content": message})
 
@@ -165,8 +214,8 @@ async def chat(req: ChatRequest):
                 yield content
 
             cursor.execute(
-                "INSERT INTO messages (user_id, role, content, created_at) VALUES (?, ?, ?, ?)",
-                (user_id, "assistant", full_response, datetime.utcnow().isoformat())
+                "INSERT INTO messages (user_id, chat_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)",
+                (user_id, chat_id, "assistant", full_response, datetime.utcnow().isoformat())
             )
             conn.commit()
 
@@ -176,9 +225,49 @@ async def chat(req: ChatRequest):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+@app.post("/chats")
+async def get_chats(req: ChatListRequest):
+    try:
+        cursor.execute("""
+            SELECT chat_id, title, created_at FROM chats
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+        """, (req.user_id,))
+        rows = cursor.fetchall()
+        return [{"chat_id": r[0], "title": r[1], "created_at": r[2]} for r in rows]
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/messages")
+async def get_messages(req: MessagesRequest):
+    try:
+        cursor.execute("""
+            SELECT role, content FROM messages
+            WHERE user_id = ? AND chat_id = ?
+            ORDER BY id ASC
+        """, (req.user_id, req.chat_id))
+        rows = cursor.fetchall()
+        return [{"role": r[0], "content": r[1]} for r in rows]
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/delete-chat")
+async def delete_chat(req: DeleteChatRequest):
+    try:
+        cursor.execute("DELETE FROM messages WHERE user_id = ? AND chat_id = ?",
+                       (req.user_id, req.chat_id))
+        cursor.execute("DELETE FROM chats WHERE user_id = ? AND chat_id = ?",
+                       (req.user_id, req.chat_id))
+        conn.commit()
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 @app.post("/extract-info")
 async def extract_info(req: ExtractRequest):
-    """Extract name, work, hobby, food from chat history"""
     try:
         user_id = req.user_id
 
@@ -197,19 +286,19 @@ async def extract_info(req: ExtractRequest):
         chat_text = "\n".join([f"{r[0]}: {r[1]}" for r in rows])
 
         extract_prompt = f"""
-Analyze this chat history and extract ONLY these 4 things about the USER:
+Analyze this chat and extract ONLY these about the USER:
 1. Name
 2. Work / Profession
 3. Hobby
 4. Favorite Food
 
-Reply ONLY in this exact JSON format (no extra text):
+Reply ONLY in JSON format:
 {{"name": "", "work": "", "hobby": "", "food": ""}}
 
-If something is not mentioned, leave it empty "".
-Keep values SHORT (1-3 words max).
+If not mentioned, leave empty "".
+Keep values SHORT (1-3 words).
 
-Chat history:
+Chat:
 {chat_text}
 """
 
@@ -223,18 +312,15 @@ Chat history:
         )
 
         result = completion.choices[0].message.content.strip()
-
-        # Clean response
         if "```" in result:
             result = result.split("```")[1].replace("json", "").strip()
 
         data = json.loads(result)
 
-        # Save to profile
         cursor.execute("""
             INSERT OR REPLACE INTO profile (user_id, name, work, hobby, food)
             VALUES (?, ?, ?, ?, ?)
-        """, (user_id, data.get("name", ""), data.get("work", ""), 
+        """, (user_id, data.get("name", ""), data.get("work", ""),
               data.get("hobby", ""), data.get("food", "")))
         conn.commit()
 
