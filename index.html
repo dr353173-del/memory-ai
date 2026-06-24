@@ -52,15 +52,9 @@ header {
   border: none; color: white; cursor: pointer; font-weight: 500;
   font-size: 13px;
 }
-.install-btn {
-  background: linear-gradient(90deg, #7c3aed, #2563eb);
-}
-.voice-toggle {
-  background: #10b981;
-}
-.voice-toggle.off {
-  background: #ef4444;
-}
+.install-btn { background: linear-gradient(90deg, #7c3aed, #2563eb); }
+.voice-toggle { background: #10b981; }
+.voice-toggle.off { background: #ef4444; }
 
 .chips {
   display: flex; gap: 10px; padding: 12px 20px;
@@ -133,10 +127,7 @@ header {
   align-self: flex-end;
   background: linear-gradient(90deg, #2563eb, #1d4ed8);
 }
-.bot {
-  align-self: flex-start;
-  background: #1f2937;
-}
+.bot { align-self: flex-start; background: #1f2937; }
 
 #inputArea {
   display: flex;
@@ -174,10 +165,63 @@ footer {
   padding: 6px;
   color: #6b7280;
 }
+
+/* Name Modal */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+}
+.modal {
+  background: #111827;
+  padding: 30px;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  border: 1px solid #1f2937;
+}
+.modal h2 {
+  margin: 0 0 10px;
+  background: linear-gradient(90deg, #a855f7, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.modal p { color: #9ca3af; margin: 0 0 20px; font-size: 14px; }
+.modal input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: #1f2937;
+  color: white;
+  margin-bottom: 12px;
+}
+.modal button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(90deg, #7c3aed, #2563eb);
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+}
 </style>
 </head>
 
 <body>
+
+<!-- Name Modal (first time) -->
+<div class="modal-bg" id="nameModal" style="display:none;">
+  <div class="modal">
+    <h2>👋 Welcome!</h2>
+    <p>Apna naam batao taaki main aapko personally help kar saku.</p>
+    <input id="nameInput" placeholder="Aapka naam..." />
+    <button onclick="saveName()">Continue</button>
+  </div>
+</div>
 
 <header>
   <div class="logo-area">
@@ -194,8 +238,8 @@ footer {
 </header>
 
 <div class="chips">
-  <div class="chip"><span>🧠 Memories</span> 0</div>
-  <div class="chip"><span>👤 Name:</span> —</div>
+  <div class="chip"><span>🧠 Memories</span> <span id="memCount">0</span></div>
+  <div class="chip"><span>👤 Name:</span> <span id="chipName">—</span></div>
   <div class="chip"><span>💼 Work:</span> —</div>
   <div class="chip"><span>🎮 Hobby:</span> —</div>
   <div class="chip"><span>🍔 Food:</span> —</div>
@@ -204,23 +248,23 @@ footer {
 <div id="chat">
   <div class="welcome" id="welcome">
     <div class="brain">🧠</div>
-    <h2>Hey <em>Deepu</em>! 👋</h2>
+    <h2>Hey <em id="welcomeName">there</em>! 👋</h2>
     <p>Main hoon tumhara Memory AI — jo tumhari baatein yaad rakhta hai!</p>
 
     <div class="cards">
-      <div class="card" onclick="quick('Mera naam Deepu hai, main AI developer hoon')">
-        <h3>👋 Introduce Yourself</h3>
-        <p>Apna naam aur kaam batao</p>
-      </div>
       <div class="card" onclick="quick('Mera naam kya hai? Yaad hai?')">
         <h3>🧠 Test Memory</h3>
         <p>Check karo yaad hai ya nahi</p>
       </div>
-      <div class="card" onclick="quick('Mujhe ek powerful motivational quote do')">
+      <div class="card" onclick="quick('Tell me about yourself')">
+        <h3>👋 About AI</h3>
+        <p>AI ke baare mein jaano</p>
+      </div>
+      <div class="card" onclick="quick('Give me a powerful motivational quote')">
         <h3>💡 Get Motivated</h3>
         <p>Powerful quote maango</p>
       </div>
-      <div class="card" onclick="quick('AI ka future kya hai bhai?')">
+      <div class="card" onclick="quick('What is the future of AI?')">
         <h3>🚀 AI Future</h3>
         <p>AI trends jaano</p>
       </div>
@@ -240,6 +284,29 @@ footer {
 const chatDiv = document.getElementById("chat");
 let voiceEnabled = true;
 
+// ===== NAME SYSTEM =====
+let userName = localStorage.getItem("userName");
+
+window.addEventListener("load", () => {
+  if (!userName) {
+    document.getElementById("nameModal").style.display = "flex";
+  } else {
+    document.getElementById("welcomeName").innerText = userName;
+    document.getElementById("chipName").innerText = userName;
+  }
+});
+
+function saveName() {
+  const name = document.getElementById("nameInput").value.trim();
+  if (!name) { alert("Please enter your name"); return; }
+  localStorage.setItem("userName", name);
+  userName = name;
+  document.getElementById("welcomeName").innerText = name;
+  document.getElementById("chipName").innerText = name;
+  document.getElementById("nameModal").style.display = "none";
+}
+
+// ===== VOICE TOGGLE =====
 function toggleVoice() {
   voiceEnabled = !voiceEnabled;
   const btn = document.getElementById("voiceToggle");
@@ -253,6 +320,7 @@ function toggleVoice() {
   }
 }
 
+// ===== MESSAGES =====
 function addMessage(text, type) {
   const welcome = document.getElementById("welcome");
   if (welcome) welcome.remove();
@@ -278,11 +346,16 @@ async function sendMessage() {
   input.value = "";
   const botDiv = addMessage("...", "bot");
 
+  // Send name as context to AI
+  const fullMessage = userName 
+    ? `[User's name is ${userName}] ${message}` 
+    : message;
+
   try {
     const res = await fetch("/chat", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ user_id: "default", message })
+      body: JSON.stringify({ user_id: userName || "default", message: fullMessage })
     });
 
     if (!res.ok) {
@@ -302,12 +375,18 @@ async function sendMessage() {
       chatDiv.scrollTop = chatDiv.scrollHeight;
     }
 
+    // Update memory count
+    let count = parseInt(localStorage.getItem("memCount") || "0") + 1;
+    localStorage.setItem("memCount", count);
+    document.getElementById("memCount").innerText = count;
+
     if (voiceEnabled) speak(txt);
   } catch (e) {
     botDiv.innerText = "⚠️ " + e.message;
   }
 }
 
+// ===== VOICE INPUT =====
 function startVoice() {
   if (!("webkitSpeechRecognition" in window)) {
     alert("Voice not supported"); return;
@@ -320,6 +399,7 @@ function startVoice() {
   r.start();
 }
 
+// ===== VOICE OUTPUT =====
 function speak(text) {
   if (!voiceEnabled) return;
   const s = new SpeechSynthesisUtterance(text);
@@ -336,6 +416,11 @@ document.getElementById("input").addEventListener("keypress", e => {
   if (e.key === "Enter") sendMessage();
 });
 
+// Load memory count
+const savedCount = localStorage.getItem("memCount");
+if (savedCount) document.getElementById("memCount").innerText = savedCount;
+
+// ===== PWA INSTALL =====
 let deferredPrompt;
 window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
