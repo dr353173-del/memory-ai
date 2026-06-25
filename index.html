@@ -20,16 +20,17 @@ body {
   overflow: hidden;
 }
 
+/* ===== SIDEBAR ===== */
 #sidebar {
-  width: 260px;
-  min-width: 260px;
+  width: 280px;
+  min-width: 280px;
   background: #0a0f1c;
   border-right: 1px solid #1f2937;
   display: flex;
   flex-direction: column;
   transition: 0.3s;
 }
-#sidebar.hidden { margin-left: -260px; }
+#sidebar.hidden { margin-left: -280px; }
 
 .sidebar-head { padding: 14px; border-bottom: 1px solid #1f2937; }
 .new-chat-btn {
@@ -37,43 +38,75 @@ body {
   padding: 12px;
   border-radius: 10px;
   border: 1px solid #374151;
-  background: transparent;
+  background: linear-gradient(90deg, #7c3aed, #2563eb);
   color: white;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
 }
-.new-chat-btn:hover { background: #1f2937; }
+.new-chat-btn:hover { opacity: 0.9; }
 
-.chat-list { flex: 1; overflow-y: auto; padding: 8px; }
+.sidebar-nav {
+  padding: 8px;
+  border-bottom: 1px solid #1f2937;
+}
+.nav-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #d1d5db;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+.nav-item:hover { background: #1f2937; }
+.nav-item.active { background: #2563eb; color: white; }
+
+.chat-list-header {
+  padding: 12px 14px 6px;
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.chat-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
 .chat-item {
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
   color: #d1d5db;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.chat-item:hover { background: #1f2937; }
+.chat-item.active { background: #2563eb; color: white; }
+.chat-title {
+  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.chat-item:hover { background: #1f2937; }
-.chat-item.active { background: #2563eb; color: white; }
 .chat-item .del-btn {
   background: none;
   border: none;
   color: #9ca3af;
   cursor: pointer;
   font-size: 14px;
-  display: none;
+  opacity: 0;
+  transition: 0.2s;
+  padding: 2px 6px;
 }
-.chat-item:hover .del-btn { display: inline; }
+.chat-item:hover .del-btn { opacity: 1; }
 .chat-item .del-btn:hover { color: #ef4444; }
 
 .sidebar-foot {
-  padding: 14px;
+  padding: 12px;
   border-top: 1px solid #1f2937;
   display: flex;
   align-items: center;
@@ -89,6 +122,7 @@ body {
 .user-info small { font-size: 11px; color: #9ca3af; }
 .logout-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; }
 
+/* ===== MAIN ===== */
 #main {
   flex: 1;
   display: flex;
@@ -131,19 +165,6 @@ header {
 .voice-toggle { background: #10b981; }
 .voice-toggle.off { background: #ef4444; }
 
-.chips {
-  display: flex; gap: 10px; padding: 12px 20px;
-  flex-wrap: wrap;
-}
-.chip {
-  background: #1f2937;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  color: #d1d5db;
-}
-.chip span { color: #a855f7; font-weight: 600; margin-right: 4px; }
-
 #chat {
   flex: 1;
   overflow-y: auto;
@@ -152,7 +173,8 @@ header {
   gap: 14px;
 }
 
-.welcome { text-align: center; margin-top: 30px; }
+/* ===== WELCOME ===== */
+.welcome { text-align: center; margin-top: 30px; padding: 0 20px; }
 .brain {
   width: 80px; height: 80px;
   border-radius: 16px;
@@ -160,6 +182,7 @@ header {
   display: flex; align-items: center; justify-content: center;
   font-size: 36px;
   margin: 0 auto 20px;
+  box-shadow: 0 0 40px rgba(168, 85, 247, 0.4);
 }
 .welcome h2 { font-size: 28px; margin: 0; }
 .welcome h2 em {
@@ -169,6 +192,34 @@ header {
   -webkit-text-fill-color: transparent;
 }
 .welcome p { color: #9ca3af; margin-top: 6px; }
+
+.start-chat-btn {
+  margin-top: 24px;
+  padding: 14px 32px;
+  border-radius: 30px;
+  border: none;
+  background: linear-gradient(90deg, #7c3aed, #2563eb);
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+}
+.start-chat-btn:hover { transform: translateY(-2px); }
+
+.demo-box {
+  margin: 20px auto;
+  max-width: 500px;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  padding: 14px 18px;
+  border-radius: 12px;
+  text-align: left;
+  font-size: 13px;
+  color: #d1d5db;
+}
+.demo-box b { color: #a855f7; }
+
 .cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -182,11 +233,13 @@ header {
   border-radius: 12px;
   cursor: pointer;
   border: 1px solid #1f2937;
+  transition: 0.2s;
 }
-.card:hover { background: #1f2937; }
+.card:hover { background: #1f2937; transform: translateY(-2px); }
 .card h3 { margin: 0 0 4px; font-size: 15px; }
 .card p { margin: 0; color: #9ca3af; font-size: 12px; }
 
+/* ===== MESSAGES ===== */
 .message {
   max-width: 75%;
   padding: 12px 16px;
@@ -195,10 +248,38 @@ header {
   white-space: pre-wrap;
   font-size: 14px;
   word-wrap: break-word;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .user { align-self: flex-end; background: linear-gradient(90deg, #2563eb, #1d4ed8); }
 .bot { align-self: flex-start; background: #1f2937; }
 
+/* ===== TYPING ANIMATION ===== */
+.typing {
+  align-self: flex-start;
+  background: #1f2937;
+  padding: 14px 20px;
+  border-radius: 14px;
+  display: flex;
+  gap: 4px;
+}
+.typing span {
+  width: 8px; height: 8px;
+  background: #9ca3af;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ===== INPUT ===== */
 #inputArea {
   display: flex;
   padding: 14px;
@@ -213,15 +294,17 @@ input {
   border: none; outline: none;
   background: #1f2937; color: white;
   min-width: 0;
+  font-size: 14px;
 }
 button.send {
-  padding: 10px 16px;
+  padding: 10px 20px;
   border-radius: 25px;
   border: none;
   background: linear-gradient(90deg, #7c3aed, #2563eb);
-  color: white; cursor: pointer; font-weight: 500;
+  color: white; cursor: pointer; font-weight: 600;
   white-space: nowrap;
 }
+button.send:disabled { opacity: 0.5; cursor: not-allowed; }
 button.voice {
   border-radius: 50%;
   width: 42px; height: 42px;
@@ -231,9 +314,40 @@ button.voice {
   color: white; cursor: pointer;
   font-size: 18px;
 }
+button.voice.listening {
+  background: #ef4444;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
 
 footer { text-align: center; font-size: 12px; padding: 6px; color: #6b7280; }
 
+/* ===== TOAST NOTIFICATION ===== */
+#toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  border-left: 4px solid #10b981;
+  font-size: 13px;
+  z-index: 1000;
+  display: none;
+  animation: slideUp 0.3s ease;
+}
+#toast.error { border-left-color: #ef4444; }
+@keyframes slideUp {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ===== MODAL ===== */
 .modal-bg {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.9);
@@ -244,10 +358,12 @@ footer { text-align: center; font-size: 12px; padding: 6px; color: #6b7280; }
   background: #111827;
   padding: 40px 30px;
   border-radius: 16px;
-  max-width: 400px;
+  max-width: 420px;
   width: 90%;
   text-align: center;
   border: 1px solid #1f2937;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 .modal .brain-big {
   width: 70px; height: 70px;
@@ -264,6 +380,15 @@ footer { text-align: center; font-size: 12px; padding: 6px; color: #6b7280; }
   -webkit-text-fill-color: transparent;
 }
 .modal p { color: #9ca3af; margin: 0 0 24px; font-size: 14px; }
+
+.close-modal {
+  position: absolute;
+  top: 10px; right: 14px;
+  background: none; border: none;
+  color: white; font-size: 22px;
+  cursor: pointer;
+}
+
 .google-btn {
   width: 100%;
   padding: 12px;
@@ -278,543 +403,121 @@ footer { text-align: center; font-size: 12px; padding: 6px; color: #6b7280; }
 }
 .google-btn:hover { background: #f3f4f6; }
 
-/* Sidebar Overlay for mobile */
+/* ===== MEMORY/PROFILE/SETTINGS DASHBOARD ===== */
+.dashboard {
+  text-align: left;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.memory-item {
+  background: #1f2937;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.memory-item .label {
+  color: #a855f7;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+.memory-item .value {
+  color: white;
+  font-size: 14px;
+  margin-top: 2px;
+}
+.memory-item .del-mem {
+  background: #ef4444;
+  border: none;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #1f2937;
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-row .label { font-size: 14px; }
+.setting-row .desc { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+
+.danger-btn {
+  background: #ef4444;
+  border: none;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.star-rating {
+  font-size: 32px;
+  cursor: pointer;
+  user-select: none;
+  margin: 10px 0;
+}
+.star { color: #374151; }
+.star.active { color: #facc15; }
+
+textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: white;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+}
+
+/* ===== OVERLAY ===== */
 #sidebarOverlay {
   display: none;
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background: rgba(0,0,0,0.5);
   z-index: 99;
 }
-#sidebarOverlay.active {
-  display: block;
-}
+#sidebarOverlay.active { display: block; }
 
-/* ===== MOBILE RESPONSIVE ===== */
+/* ===== MOBILE ===== */
 @media (max-width: 768px) {
-  body {
-    display: block;
-    height: 100vh;
-    overflow: hidden;
-  }
-
+  body { display: block; height: 100vh; overflow: hidden; }
   #sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: 260px;
-    z-index: 100;
-    margin-left: 0;
+    position: fixed; top: 0; left: 0;
+    height: 100vh; width: 280px;
+    z-index: 100; margin-left: 0;
     transform: translateX(0);
     transition: transform 0.3s ease;
     box-shadow: 2px 0 20px rgba(0,0,0,0.5);
   }
-
-  #sidebar.hidden {
-    margin-left: 0;
-    transform: translateX(-100%);
-    box-shadow: none;
-  }
-
-  #main {
-    width: 100%;
-    height: 100vh;
-    margin-left: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .chips { display: none; }
-
-  header {
-    padding: 10px 12px;
-    gap: 6px;
-  }
-
-  .logo-icon {
-    width: 34px; height: 34px;
-    font-size: 16px;
-    border-radius: 8px;
-  }
-
+  #sidebar.hidden { margin-left: 0; transform: translateX(-100%); box-shadow: none; }
+  #main { width: 100%; height: 100vh; }
+  header { padding: 10px 12px; }
+  .logo-icon { width: 34px; height: 34px; font-size: 16px; border-radius: 8px; }
   .logo-text h1 { font-size: 15px; }
   .logo-text p { font-size: 9px; }
-  .logo-area { gap: 8px; }
-
-  .header-btns { gap: 5px; }
-  .install-btn, .voice-toggle {
-    padding: 6px 10px;
-    font-size: 11px;
-    border-radius: 6px;
-  }
-
-  .menu-btn { font-size: 20px; margin-right: 6px; }
-
+  .install-btn, .voice-toggle { padding: 6px 10px; font-size: 11px; }
   .welcome h2 { font-size: 22px; }
-  .welcome p { font-size: 13px; }
-  .brain {
-    width: 60px; height: 60px;
-    font-size: 28px;
-    border-radius: 12px;
-  }
-
-  .cards {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    padding: 0 10px;
-    max-width: 100%;
-  }
-
-  .card { padding: 12px; }
-  .card h3 { font-size: 14px; }
-  .card p { font-size: 11px; }
-
-  #chat { padding: 14px 10px; }
-
-  .message {
-    max-width: 88%;
-    font-size: 13px;
-    padding: 10px 14px;
-    border-radius: 12px;
-  }
-
-  #inputArea {
-    padding: 10px;
-    gap: 6px;
-  }
-
-  input {
-    padding: 10px 14px;
-    font-size: 14px;
-  }
-
-  button.send {
-    padding: 10px 14px;
-    font-size: 13px;
-  }
-
-  button.voice {
-    width: 38px; height: 38px;
-    min-width: 38px;
-    font-size: 16px;
-  }
-
-  footer { font-size: 10px; padding: 4px; }
-
-  .sidebar-foot {
-    padding: 10px;
-    gap: 8px;
-  }
-
-  .user-avatar { width: 32px; height: 32px; }
-  .user-info b { font-size: 12px; }
-  .user-info small { font-size: 10px; }
+  .brain { width: 60px; height: 60px; font-size: 28px; }
+  .cards { grid-template-columns: 1fr; padding: 0 10px; }
+  .message { max-width: 88%; font-size: 13px; }
+  #inputArea { padding: 10px; gap: 6px; }
+  input { padding: 10px 14px; font-size: 14px; }
+  button.send { padding: 10px 14px; font-size: 13px; }
+  button.voice { width: 38px; height: 38px; min-width: 38px; }
+  .modal { padding: 30px 20px; }
 }
 </style>
 </head>
-
-<body>
-
-<!-- Sidebar Overlay -->
-<div id="sidebarOverlay" onclick="toggleSidebar()"></div>
-
-<div class="modal-bg" id="loginModal">
-  <div class="modal">
-    <div class="brain-big">🧠</div>
-    <h2>Memory AI Pro</h2>
-    <p>Sign in to save your memories forever</p>
-    <button class="google-btn" onclick="loginGoogle()">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-      Continue with Google
-    </button>
-  </div>
-</div>
-
-<div id="sidebar" class="hidden">
-  <div class="sidebar-head">
-    <button class="new-chat-btn" onclick="newChat()">＋ New Chat</button>
-  </div>
-  <div class="chat-list" id="chatList"></div>
-  <div class="sidebar-foot">
-    <img class="user-avatar" id="userAvatar" src=""/>
-    <div class="user-info">
-      <b id="userName">User</b>
-      <small id="userEmail">—</small>
-    </div>
-    <button class="logout-btn" onclick="logout()" title="Logout">🚪</button>
-  </div>
-</div>
-
-<div id="main">
-  <header>
-    <div style="display:flex; align-items:center;">
-      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-      <div class="logo-area">
-        <div class="logo-icon">🧠</div>
-        <div class="logo-text">
-          <h1>Memory AI Pro</h1>
-          <p>by Deepu — v1.0</p>
-        </div>
-      </div>
-    </div>
-    <div class="header-btns">
-      <button class="voice-toggle" id="voiceToggle" onclick="toggleVoice()">🔊 Voice ON</button>
-      <button class="install-btn" id="installBtn" onclick="installApp()" style="display:none;">⬇ Install</button>
-    </div>
-  </header>
-
-  <div class="chips">
-    <div class="chip"><span>🧠 Memories</span> <span id="memCount">0</span></div>
-    <div class="chip"><span>👤 Name:</span> <span id="chipName">—</span></div>
-    <div class="chip"><span>💼 Work:</span> <span id="chipWork">—</span></div>
-    <div class="chip"><span>🎮 Hobby:</span> <span id="chipHobby">—</span></div>
-    <div class="chip"><span>🍔 Food:</span> <span id="chipFood">—</span></div>
-  </div>
-
-  <div id="chat">
-    <div class="welcome" id="welcome">
-      <div class="brain">🧠</div>
-      <h2>Hey <em id="welcomeName">there</em>! 👋</h2>
-      <p>Main hoon tumhara Memory AI — jo tumhari baatein yaad rakhta hai!</p>
-      <div class="cards">
-        <div class="card" onclick="quick('Mera naam kya hai? Yaad hai?')">
-          <h3>🧠 Test Memory</h3><p>Check karo yaad hai ya nahi</p>
-        </div>
-        <div class="card" onclick="quick('Tell me about yourself')">
-          <h3>👋 About AI</h3><p>AI ke baare mein jaano</p>
-        </div>
-        <div class="card" onclick="quick('Give me a motivational quote')">
-          <h3>💡 Motivation</h3><p>Powerful quote maango</p>
-        </div>
-        <div class="card" onclick="quick('What is the future of AI?')">
-          <h3>🚀 AI Future</h3><p>AI trends jaano</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="inputArea">
-    <input id="input" placeholder="Kuch bhi pucho ya batao..." />
-    <button class="voice" onclick="startVoice()">🎤</button>
-    <button class="send" onclick="sendMessage()">Send</button>
-  </div>
-
-  <footer>⚡ Powered by Groq AI + Memory Engine 🧠</footer>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } 
-  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAoTIXZ73ijuOVJfy_2vqBRZqqv_FKTv00",
-  authDomain: "memory-ai-pro.firebaseapp.com",
-  projectId: "memory-ai-pro",
-  storageBucket: "memory-ai-pro.firebasestorage.app",
-  messagingSenderId: "4127560967",
-  appId: "1:4127560967:web:59491772c5c719ecf5a1a2"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-
-window.loginGoogle = async function() {
-  try { await signInWithPopup(auth, provider); }
-  catch(e) { alert("Login failed: " + e.message); }
-};
-
-window.logout = async function() {
-  await signOut(auth);
-  location.reload();
-};
-
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    document.getElementById("loginModal").style.display = "none";
-    // Mobile pe sidebar hidden rahe, desktop pe show ho
-    if (window.innerWidth > 768) {
-      document.getElementById("sidebar").classList.remove("hidden");
-    } else {
-      document.getElementById("sidebar").classList.add("hidden");
-    }
-    window.currentUser = {
-      uid: user.uid,
-      name: user.displayName,
-      email: user.email,
-      photo: user.photoURL
-    };
-    document.getElementById("userName").innerText = user.displayName;
-    document.getElementById("userEmail").innerText = user.email;
-    document.getElementById("userAvatar").src = user.photoURL;
-    document.getElementById("welcomeName").innerText = user.displayName.split(" ")[0];
-    document.getElementById("chipName").innerText = user.displayName.split(" ")[0];
-    initApp();
-  } else {
-    document.getElementById("loginModal").style.display = "flex";
-    document.getElementById("sidebar").classList.add("hidden");
-  }
-});
-</script>
-
-<script>
-const chatDiv = document.getElementById("chat");
-let voiceEnabled = true;
-let currentChatId = "chat_" + Date.now();
-
-function initApp() {
-  loadChats();
-  loadProfile();
-}
-
-function toggleSidebar() {
-  const sidebar = document.getElementById("sidebar");
-  const overlay = document.getElementById("sidebarOverlay");
-  sidebar.classList.toggle("hidden");
-
-  // Mobile pe overlay dikhao
-  if (window.innerWidth <= 768) {
-    if (sidebar.classList.contains("hidden")) {
-      overlay.classList.remove("active");
-    } else {
-      overlay.classList.add("active");
-    }
-  }
-}
-
-function newChat() {
-  currentChatId = "chat_" + Date.now();
-  chatDiv.innerHTML = `
-    <div class="welcome" id="welcome">
-      <div class="brain">🧠</div>
-      <h2>Hey <em>${window.currentUser?.name.split(" ")[0] || "there"}</em>! 👋</h2>
-      <p>New chat started — kuch bhi pucho!</p>
-    </div>`;
-  loadChats();
-  // Mobile pe sidebar close karo after new chat
-  if (window.innerWidth <= 768) {
-    document.getElementById("sidebar").classList.add("hidden");
-    document.getElementById("sidebarOverlay").classList.remove("active");
-  }
-}
-
-async function loadChats() {
-  if (!window.currentUser) return;
-  try {
-    const res = await fetch("/chats", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ user_id: window.currentUser.uid })
-    });
-    const chats = await res.json();
-    const list = document.getElementById("chatList");
-    list.innerHTML = "";
-    chats.forEach(c => {
-      const div = document.createElement("div");
-      div.className = "chat-item" + (c.chat_id === currentChatId ? " active" : "");
-      div.innerHTML = `<span>${c.title}</span><button class="del-btn" onclick="deleteChat(event,'${c.chat_id}')">🗑</button>`;
-      div.onclick = () => loadChat(c.chat_id);
-      list.appendChild(div);
-    });
-  } catch(e) { console.log(e); }
-}
-
-async function loadChat(chatId) {
-  currentChatId = chatId;
-  try {
-    const res = await fetch("/messages", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ user_id: window.currentUser.uid, chat_id: chatId })
-    });
-    const msgs = await res.json();
-    chatDiv.innerHTML = "";
-    msgs.forEach(m => addMessage(m.content, m.role === "user" ? "user" : "bot"));
-    loadChats();
-    // Mobile pe sidebar close karo after loading chat
-    if (window.innerWidth <= 768) {
-      document.getElementById("sidebar").classList.add("hidden");
-      document.getElementById("sidebarOverlay").classList.remove("active");
-    }
-  } catch(e) { console.log(e); }
-}
-
-async function deleteChat(e, chatId) {
-  e.stopPropagation();
-  if (!confirm("Delete this chat?")) return;
-  await fetch("/delete-chat", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ user_id: window.currentUser.uid, chat_id: chatId })
-  });
-  if (chatId === currentChatId) newChat();
-  else loadChats();
-}
-
-function toggleVoice() {
-  voiceEnabled = !voiceEnabled;
-  const btn = document.getElementById("voiceToggle");
-  if (voiceEnabled) {
-    btn.innerText = "🔊 Voice ON";
-    btn.classList.remove("off");
-  } else {
-    btn.innerText = "🔇 Voice OFF";
-    btn.classList.add("off");
-    speechSynthesis.cancel();
-  }
-}
-
-function addMessage(text, type) {
-  const welcome = document.getElementById("welcome");
-  if (welcome) welcome.remove();
-  const div = document.createElement("div");
-  div.className = "message " + type;
-  div.innerText = text;
-  chatDiv.appendChild(div);
-  chatDiv.scrollTop = chatDiv.scrollHeight;
-  return div;
-}
-
-function quick(text) {
-  document.getElementById("input").value = text;
-  sendMessage();
-}
-
-async function sendMessage() {
-  speechSynthesis.cancel();
-  if (!window.currentUser) { alert("Please login first"); return; }
-  const input = document.getElementById("input");
-  const message = input.value.trim();
-  if (!message) return;
-
-  addMessage(message, "user");
-  input.value = "";
-  const botDiv = addMessage("...", "bot");
-
-  const fullMessage = `[My name is ${window.currentUser.name}] ${message}`;
-
-  try {
-    const res = await fetch("/chat", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ 
-        user_id: window.currentUser.uid, 
-        chat_id: currentChatId,
-        message: fullMessage 
-      })
-    });
-    if (!res.ok) { botDiv.innerText = "⚠️ Error " + res.status; return; }
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let txt = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      txt += decoder.decode(value);
-      botDiv.innerText = txt;
-      chatDiv.scrollTop = chatDiv.scrollHeight;
-    }
-
-    let count = parseInt(localStorage.getItem("memCount") || "0") + 1;
-    localStorage.setItem("memCount", count);
-    document.getElementById("memCount").innerText = count;
-
-    if (voiceEnabled) speak(txt);
-    if (count % 2 === 0) loadProfile();
-    loadChats();
-  } catch (e) { botDiv.innerText = "⚠️ " + e.message; }
-}
-
-async function loadProfile() {
-  if (!window.currentUser) return;
-  try {
-    const res = await fetch("/extract-info", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ user_id: window.currentUser.uid })
-    });
-    const data = await res.json();
-    if (data.name) document.getElementById("chipName").innerText = data.name;
-    if (data.work) document.getElementById("chipWork").innerText = data.work;
-    if (data.hobby) document.getElementById("chipHobby").innerText = data.hobby;
-    if (data.food) document.getElementById("chipFood").innerText = data.food;
-  } catch(e) {}
-}
-
-function startVoice() {
-  speechSynthesis.cancel();
-  if (!("webkitSpeechRecognition" in window)) { alert("Voice not supported"); return; }
-  const r = new webkitSpeechRecognition();
-  r.lang = "hi-IN";
-  r.onresult = e => { document.getElementById("input").value = e.results[0][0].transcript; };
-  r.start();
-}
-
-function speak(text) {
-  if (!voiceEnabled) return;
-  speechSynthesis.cancel();
-
-  let cleanText = text
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/\*(.*?)\*/g, "$1")
-    .replace(/__(.*?)__/g, "$1")
-    .replace(/_(.*?)_/g, "$1")
-    .replace(/~~(.*?)~~/g, "$1")
-    .replace(/`(.*?)`/g, "$1")
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/#{1,6}\s/g, "")
-    .replace(/^\s*[-*+]\s/gm, "")
-    .replace(/\[(.*?)\]\(.*?\)/g, "$1")
-    .replace(/\n{2,}/g, ". ")
-    .replace(/[#*_~`>]/g, "")
-    .trim();
-
-  const s = new SpeechSynthesisUtterance(cleanText);
-  s.lang = "hi-IN";
-  const voices = speechSynthesis.getVoices();
-  const hindiVoice = voices.find(v => v.lang.includes("hi"));
-  if (hindiVoice) s.voice = hindiVoice;
-  speechSynthesis.speak(s);
-}
-speechSynthesis.onvoiceschanged = () => {};
-
-document.getElementById("input").addEventListener("keypress", e => {
-  if (e.key === "Enter") sendMessage();
-});
-document.getElementById("input").addEventListener("input", () => {
-  if (speechSynthesis.speaking) speechSynthesis.cancel();
-});
-
-const savedCount = localStorage.getItem("memCount");
-if (savedCount) document.getElementById("memCount").innerText = savedCount;
-
-let deferredPrompt;
-window.addEventListener("beforeinstallprompt", e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById("installBtn").style.display = "block";
-});
-
-async function installApp() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") document.getElementById("installBtn").style.display = "none";
-    deferredPrompt = null;
-  } else alert("Already installed or not supported");
-}
-
-window.addEventListener("appinstalled", () => {
-  document.getElementById("installBtn").style.display = "none";
-});
-
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/service-worker.js");
-}
-</script>
-
-</body>
-</html>
