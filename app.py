@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from datetime import datetime
 import asyncio
@@ -24,10 +24,10 @@ CORS(app)
 
 @app.route("/", methods=["GET", "HEAD"])
 def home():
-    """Home page — HEAD method bhi allow"""
+    """Home page serve karo"""
     if request.method == "HEAD":
         return "", 200
-    return render_template("index.html")
+    return send_from_directory(".", "index.html")
 
 
 @app.route("/health", methods=["GET", "HEAD"])
@@ -100,7 +100,6 @@ def chat():
 
 def generate_chat_title(first_message: str) -> str:
     """First message se chat title generate karo"""
-    # Clean message
     msg = first_message.strip()
     
     # Common greetings
@@ -251,7 +250,7 @@ def api_rename_chat():
         return jsonify({"error": str(e)}), 500
 
 
-# ============ FEEDBACK APIs ============
+# ============ FEEDBACK API ============
 
 @app.route("/api/feedback", methods=["POST"])
 def api_save_feedback():
@@ -285,7 +284,7 @@ def api_get_stats():
         return jsonify({"error": str(e)}), 500
 
 
-# ============ PWA FILES ============
+# ============ PWA & STATIC FILES ============
 
 @app.route("/manifest.json")
 def manifest():
@@ -307,11 +306,16 @@ def icon_152():
     return send_from_directory(".", "icon-152.png")
 
 
+@app.route("/static/<path:filename>")
+def static_files(filename):
+    return send_from_directory("static", filename)
+
+
 # ============ ADMIN APIs (Optional) ============
 
 @app.route("/api/admin/all-memories", methods=["GET"])
 def admin_all_memories():
-    """Admin: Saari memories dekho (security add karna baad mein)"""
+    """Admin: Saari memories dekho"""
     memories = get_all_memories()
     return jsonify({"memories": memories, "count": len(memories)})
 
