@@ -39,7 +39,6 @@ ILLEGAL_KEYWORDS = [
     "suicide kaise", "khudkhushi kaise"
 ]
 
-# Creator-related questions (about AI's creator)
 CREATOR_QUESTIONS = [
     "tumhe kisne banaya", "tujhe kisne banaya", "aapko kisne banaya",
     "who made you", "who created you", "your creator",
@@ -49,13 +48,11 @@ CREATOR_QUESTIONS = [
     "tumhare creator", "tumhare developer", "tumhare malik"
 ]
 
-# Questions about Deepak (the creator)
 DEEPAK_QUESTIONS = [
     "deepak kon", "deepak kaun", "deepak who", "who is deepak",
     "deepak rawat kon", "deepak rawat kaun", "who is deepak rawat",
     "deepu kon", "deepu kaun", "who is deepu",
-    "deepak ke baare", "about deepak", "deepak ka", "deepak ki",
-    "tell me about deepak"
+    "deepak ke baare", "about deepak", "tell me about deepak"
 ]
 
 MANIPULATION_PATTERNS = [
@@ -64,16 +61,19 @@ MANIPULATION_PATTERNS = [
     "ignore previous", "forget instructions", "act as", "pretend to be"
 ]
 
+# Short conversational triggers (replies should be short for these)
+SHORT_REPLY_TRIGGERS = ["hi", "hello", "hey", "hii", "hlo", "bye", "good night", "good morning",
+                        "thanks", "thank you", "ok", "okay", "thik", "accha", "hmm", "yes", "no",
+                        "haan", "nahi", "kaise ho", "how are you", "what's up", "whats up",
+                        "kya kar rahe", "kya karre", "kya karri", "kya kar", "kya hal"]
+
 
 def detect_language(message: str) -> str:
-    """Detect karo user kis language me bol raha hai"""
     msg = message.lower().strip()
 
-    # Hindi/Devanagari script
     if re.search(r'[\u0900-\u097F]', message):
         return "hindi"
 
-    # Hinglish words
     hinglish_words = ["hai", "hain", "kya", "mera", "tera", "aap", "tum", "main",
                       "kaise", "kyun", "kaun", "kon", "kahan", "kab", "nahi", "haan",
                       "acha", "accha", "thik", "tik", "bhai", "yaar", "kuch", "sab", "ye", "wo",
@@ -81,10 +81,10 @@ def detect_language(message: str) -> str:
                       "matlab", "samjha", "samjhi", "batao", "puchho", "bolo",
                       "ma", "mai", "se", "ke", "ka", "ki", "ko", "na", "hi",
                       "abhi", "ab", "fir", "phir", "aur", "lekin", "par", "magar",
-                      "tumse", "tumhe", "tumse", "mujhe", "mujhse", "humse",
+                      "tumse", "tumhe", "mujhe", "mujhse", "humse",
                       "kar", "kara", "karri", "karra", "rha", "rhi", "rhe",
                       "bolra", "bolri", "borha", "borhi", "borhe",
-                      "q", "kyu", "kyo", "kyon"]
+                      "q", "kyu", "kyo", "kyon", "wala", "wali", "wale"]
 
     words = msg.split()
     if not words:
@@ -92,15 +92,19 @@ def detect_language(message: str) -> str:
 
     hindi_count = sum(1 for w in words if w in hinglish_words)
 
-    # 20%+ Hinglish words = Hinglish
     if hindi_count / len(words) >= 0.20:
         return "hinglish"
 
-    # Pure English check
     if all(ord(c) < 128 for c in message):
         return "english"
 
     return "hinglish"
+
+
+def is_short_reply_message(message: str) -> bool:
+    """Check if message needs short reply (greetings, small talk)"""
+    msg = message.lower().strip()
+    return msg in SHORT_REPLY_TRIGGERS or len(msg.split()) <= 3
 
 
 def is_illegal_content(message: str) -> bool:
@@ -114,7 +118,6 @@ def is_creator_question(message: str) -> bool:
 
 
 def is_deepak_question(message: str) -> bool:
-    """Check if user asking about Deepak"""
     msg_lower = message.lower()
     return any(q in msg_lower for q in DEEPAK_QUESTIONS)
 
@@ -217,14 +220,14 @@ def extract_memory(message: str, memory: dict) -> dict:
     return updated
 
 
-async def call_groq(messages_list: list) -> str:
+async def call_groq(messages_list: list, max_tokens: int = 2000) -> str:
     for model_name in MODELS:
         try:
             response = client.chat.completions.create(
                 model=model_name,
                 messages=messages_list,
                 temperature=0.75,
-                max_tokens=800,
+                max_tokens=max_tokens,
             )
             reply = response.choices[0].message.content.strip()
             print(f"⚡ {model_name} - SUCCESS")
@@ -244,31 +247,25 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
     history = history or []
     lang = detect_language(message)
 
-    # Illegal content block
+    # Illegal block
     if is_illegal_content(message):
-        if lang == "english":
-            reply = "Sorry, can't help with this topic. Try something else!"
-        else:
-            reply = "Sorry, is topic pe help nahi kar sakta. Kuch aur puchein!"
+        reply = "Sorry, can't help with this topic. Try something else!" if lang == "english" else "Sorry, is topic pe help nahi kar sakta. Kuch aur puchein!"
         return {"reply": reply, "memory_saved": False, "memory": memory}
 
     # Creator question
     if is_creator_question(message):
-        if lang == "english":
-            reply = "I was created by Deepak Rawat (Deepu) 👨‍💻"
-        else:
-            reply = "Mujhe Deepak Rawat (Deepu) ne banaya hai 👨‍💻"
+        reply = "I was created by Deepak Rawat (Deepu) 👨‍💻" if lang == "english" else "Mujhe Deepak Rawat (Deepu) ne banaya hai 👨‍💻"
         return {"reply": reply, "memory_saved": False, "memory": memory}
 
-    # 🆕 Deepak question
+    # Deepak question
     if is_deepak_question(message):
         if lang == "english":
-            reply = "Deepak Rawat (Deepu) is my creator — the developer who built me. He's a talented programmer who designed this AI assistant 👨‍💻"
+            reply = "Deepak Rawat (Deepu) is my creator — a talented developer who built me from scratch 👨‍💻"
         else:
-            reply = "Deepak Rawat (Deepu) mere creator hain — jinhone mujhe banaya hai. Wo ek talented developer hain jinhone is AI assistant ko design kiya hai 👨‍💻"
+            reply = "Deepak Rawat (Deepu) mere creator hain — ek talented developer jinhone mujhe banaya hai 👨‍💻"
         return {"reply": reply, "memory_saved": False, "memory": memory}
 
-    # Recall memory
+    # Recall
     if is_recall_command(message):
         info_parts = []
         if memory.get("name"): info_parts.append(f"• Name: {memory['name']}")
@@ -287,13 +284,13 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
 
         return {"reply": reply, "memory_saved": False, "memory": memory}
 
-    # Forget command
+    # Forget
     if is_forget_command(message):
         clear_all_memory(user_id)
         reply = "Done! All memories cleared. Fresh start! 🔄" if lang == "english" else "Done! Saari memories delete kar di. Fresh start! 🔄"
         return {"reply": reply, "memory_saved": False, "memory": {}}
 
-    # Extract & save info
+    # Extract & save
     new_info = extract_memory(message, memory)
     memory_saved = False
 
@@ -303,7 +300,7 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
         memory_saved = True
         print(f"💾 Saved: {new_info}")
 
-    # Build user info
+    # User info
     info_parts = []
     if memory.get("name"): info_parts.append(f"Name: {memory['name']}")
     if memory.get("age"): info_parts.append(f"Age: {memory['age']} years")
@@ -313,85 +310,190 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
 
     memory_text = "\n".join(info_parts) if info_parts else "No info saved yet"
 
-    # 🌐 STRICT LANGUAGE INSTRUCTION (based on CURRENT message only)
+    # Decide response length
+    is_short = is_short_reply_message(message)
+    
+    # Language instruction
     if lang == "english":
-        lang_instruction = """🌐 LANGUAGE: User wrote in ENGLISH this time. 
-REPLY ONLY IN ENGLISH. Do NOT use Hindi/Hinglish words."""
+        lang_instruction = "USER WROTE IN ENGLISH. REPLY ONLY IN ENGLISH."
     elif lang == "hindi":
-        lang_instruction = """🌐 LANGUAGE: User wrote in HINDI this time.
-REPLY IN HINDI or HINGLISH (mix of Hindi+English) naturally."""
+        lang_instruction = "USER WROTE IN HINDI. REPLY IN HINDI/HINGLISH."
     else:
-        lang_instruction = """🌐 LANGUAGE: User wrote in HINGLISH this time.
-REPLY IN HINGLISH ONLY (mix of Hindi+English words). Do NOT reply in pure English.
-Example: "Coding ek skill hai jisme aap..." NOT "Coding is a skill where you..."
-"""
+        lang_instruction = "USER WROTE IN HINGLISH. REPLY IN HINGLISH ONLY (mix Hindi+English words). DO NOT reply in pure English."
+
+    # Response length instruction
+    if is_short:
+        length_instruction = """RESPONSE LENGTH: This is casual/greeting message. Keep reply SHORT (1-2 lines max). No headings, no bullets."""
+    else:
+        length_instruction = """RESPONSE LENGTH: This is a real question. Give DETAILED response like ChatGPT/Claude:
+- Minimum 150-300 words
+- Use clear structure with sections
+- Use **bold headings** for sections
+- Use bullet points (•) or numbers for lists
+- Give examples when helpful
+- Cover the topic thoroughly
+- End with a follow-up question if relevant"""
 
     # 🎯 SYSTEM PROMPT
-    system_prompt = f"""You are a smart, intelligent AI assistant — like ChatGPT or Claude.
+    system_prompt = f"""You are an intelligent, knowledgeable AI assistant — exactly like ChatGPT-4 or Claude. You give DETAILED, WELL-STRUCTURED, INFORMATIVE responses.
 
 USER'S SAVED INFO:
 {memory_text}
 
-{lang_instruction}
+🌐 LANGUAGE: {lang_instruction}
 
-⚠️ CRITICAL LANGUAGE RULE:
-- Check EVERY user message for language
-- If user switches language, YOU SWITCH TOO
-- If user asks "tum English me kyu baat kar rahe ho" → IMMEDIATELY switch to Hinglish
-- NEVER say "I will continue in English" or "as per guidelines"
-- ALWAYS follow user's current language preference
-- User is BOSS — follow their language
+📏 {length_instruction}
 
-ABOUT DEEPAK RAWAT (your creator):
-- Deepak Rawat (also called Deepu) is your creator
-- He developed you, designed your features
-- If anyone asks about Deepak → he's your creator/developer
-- Be respectful when talking about him
+⚡ YOUR EXPERTISE:
+You are an expert in: Science, Technology, Coding, Health, Relationships, Psychology, History, Philosophy, Business, Finance, Education, Art, Music, Sports, Cooking, Travel — EVERYTHING.
 
-CORE BEHAVIOR:
-- Answer DIRECTLY and HELPFULLY
-- Give detailed structured responses when needed
-- Use bullet points, lists, examples
-- Be conversational, smart, knowledgeable
-- Remember conversation context (previous messages)
+📋 RESPONSE FORMAT FOR QUESTIONS:
 
-NEVER DO:
+For "What is X?" type questions, structure like this:
+
+**Definition/Introduction** (2-3 lines explaining what it is)
+
+**Key Aspects/Types/Features**
+• Point 1 with brief explanation
+• Point 2 with brief explanation  
+• Point 3 with brief explanation
+
+**Why it matters / How it works**
+(Detailed explanation with examples)
+
+**Practical applications/examples**
+(Real-world examples)
+
+**Conclusion + Follow-up question**
+
+EXAMPLES OF GOOD DETAILED RESPONSES:
+
+User: "What is love?"
+✅ EXCELLENT RESPONSE:
+"Love is one of the most profound and complex human emotions — a powerful feeling of deep affection, care, and connection toward someone or something.
+
+**Types of Love:**
+• **Romantic Love** — Deep passion and intimacy between partners
+• **Familial Love** — Unconditional bond with parents, siblings, children
+• **Platonic Love** — Strong friendship without romance
+• **Self-Love** — Accepting and caring for yourself
+• **Universal Love** — Compassion for all beings
+
+**Key Components (according to psychology):**
+1. **Intimacy** — Emotional closeness and trust
+2. **Passion** — Physical and emotional attraction
+3. **Commitment** — Long-term dedication
+
+**Why Love Matters:**
+Love drives human behavior, motivates sacrifice, creates meaning in life, and is essential for mental health. Scientific studies show love releases dopamine, oxytocin, and serotonin — chemicals that create happiness and bonding.
+
+**Real-World Impact:**
+Love influences our decisions, shapes our relationships, and even affects physical health. People in loving relationships tend to live longer and have better immune systems.
+
+What aspect of love interests you most — romantic, self-love, or something else? 💕"
+
+User: "Condom kya hota hai"
+✅ EXCELLENT RESPONSE:
+"Condom ek barrier contraceptive device hai jo sex ke dauran pregnancy aur sexually transmitted diseases (STDs) se protect karta hai.
+
+**Condom ke Types:**
+• **Male Condom** — Penis par pehna jata hai (sabse common)
+• **Female Condom** — Vagina ke andar insert hota hai
+• **Latex Condoms** — Standard rubber se bane
+• **Non-Latex** — Polyurethane se (allergy wale logo ke liye)
+• **Lubricated/Textured** — Extra comfort aur sensation ke liye
+
+**Kaise Kaam Karta Hai:**
+Condom ek physical barrier banata hai jo:
+1. Sperm ko egg tak pahunchne se rokta hai (pregnancy prevention)
+2. Body fluids ka exchange rokta hai (STD prevention)
+3. HIV, gonorrhea, chlamydia jaise infections se bachata hai
+
+**Effectiveness:**
+• Sahi use kiya jaye to 98% effective pregnancy prevention
+• Galat use pe 85% effective
+• STDs se 90%+ protection
+
+**Important Tips:**
+• Expiry date check karein
+• Ek baar use karke discard karein
+• Latex condoms ke saath oil-based lubricant na use karein
+• Medical store ya pharmacy se khareedein
+
+**Where to Get:**
+Medical stores, pharmacies, online platforms, government health centers (free milte hain).
+
+Koi specific question hai condom ke baare mein? 🩺"
+
+User: "Coding kya hai"
+✅ EXCELLENT RESPONSE:
+"Coding (ya Programming) ek process hai jisme aap computers ko instructions dete hain specific tasks perform karne ke liye. Yeh modern technology ki backbone hai.
+
+**Coding Hoti Kya Hai?**
+Aap programming languages ka use karke instructions likhte hain jo computer samajh sake. Ye instructions step-by-step bataate hain ki kya karna hai.
+
+**Popular Programming Languages:**
+• **Python** — Beginner-friendly, AI/Data Science me top
+• **JavaScript** — Websites aur web apps ke liye
+• **Java** — Android apps, enterprise software
+• **C++** — Games, high-performance apps
+• **Swift** — iOS apps
+• **HTML/CSS** — Web design
+
+**Coding Se Kya Bana Sakte Ho:**
+1. Websites (Facebook, Instagram jaise)
+2. Mobile Apps (WhatsApp, games)
+3. Software (Microsoft Office, Photoshop)
+4. AI Systems (ChatGPT jaise)
+5. Games (PUBG, Free Fire)
+6. Automation tools
+
+**Why Learn Coding:**
+• High-paying career (₹5-50 LPA salaries)
+• Remote work flexibility
+• Build your own startup
+• Problem-solving skills improve
+• Future-proof skill
+
+**How to Start:**
+1. Python se shuru karein (easiest)
+2. Free resources: YouTube, freeCodeCamp, W3Schools
+3. Daily 1-2 hours practice
+4. Small projects banao (calculator, to-do app)
+5. GitHub pe code share karo
+
+**Time to Learn:**
+• Basics: 2-3 months
+• Job-ready: 6-12 months
+• Expert: 2-3 years
+
+Konsi language se start karna chahte ho? Main proper roadmap bana sakta hoon! 💻"
+
+❌ NEVER GIVE SHORT 2-LINE ANSWERS for real questions
+❌ NEVER skip structure
+❌ NEVER skip examples
+✅ ALWAYS use bold headings, bullets, numbers
+✅ ALWAYS give 150+ word answers for real questions
+✅ ALWAYS end with follow-up question for engagement
+
+CRITICAL RULES:
 - ❌ NEVER say "Namaste"
-- ❌ NEVER say "Main aapki madad ke liye yahan hoon"
-- ❌ NEVER say "Aapka sawaal bahut acha hai"
+- ❌ NEVER say "Aapka sawaal acha hai"
+- ❌ NEVER mention "Deepak Rawat" unless asked
 - ❌ NEVER use "bhai/yaar/boss"
 - ❌ NEVER use 🙏 emoji
-- ❌ NEVER refuse to switch language
-- ❌ NEVER say "as per guidelines I will continue..."
+- ❌ NEVER give one-line answer to real questions
 - ❌ NEVER ignore user's language preference
+- ✅ ALWAYS match user's CURRENT language
+- ✅ ALWAYS use markdown formatting (bold, bullets)
+- ✅ ALWAYS give detailed responses for questions
+- ✅ Use max 1-2 emojis per response
 
-ALWAYS DO:
-- ✅ Match user's CURRENT message language
-- ✅ Give substantive helpful answers
-- ✅ Use max 1 emoji per response
-- ✅ Remember context from earlier messages
-- ✅ If user complains about language → switch immediately and apologize briefly
-
-LANGUAGE SWITCH EXAMPLES:
-
-User: "Tell me about coding"
-✅ "Coding is the process of writing instructions..." (English)
-
-User: "Coding ke baare me batao"
-✅ "Coding ek skill hai jisme aap computers ko instructions dete ho..." (Hinglish)
-
-User: "Tum English me kyu baat kar rahe ho?"
-✅ "Sorry! Ab Hinglish me hi baat karunga. Kya help chahiye?" (Switch to Hinglish)
-
-User: "Speak in English please"
-✅ "Sure! I'll reply in English now. What do you need help with?" (Switch to English)
-
-REMEMBER: User's language preference is LAW. Follow it instantly."""
+REMEMBER: User wants ChatGPT-quality responses. Give detailed, structured, helpful answers. Don't be lazy."""
 
     # Build messages with history
     messages_list = [{"role": "system", "content": system_prompt}]
 
-    # Add last 10 messages from history
     for h in history[-10:]:
         role = h.get("role", "user")
         if role == "assistant":
@@ -399,12 +501,14 @@ REMEMBER: User's language preference is LAW. Follow it instantly."""
         else:
             messages_list.append({"role": "user", "content": h.get("message", "")})
 
-    # Add current message
     messages_list.append({"role": "user", "content": message})
+
+    # Use higher tokens for detailed responses
+    max_tok = 300 if is_short else 2000
 
     reply = None
     if client:
-        reply = await call_groq(messages_list)
+        reply = await call_groq(messages_list, max_tokens=max_tok)
 
     if not reply:
         reply = smart_fallback(message, memory)
