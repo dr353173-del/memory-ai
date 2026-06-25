@@ -7,517 +7,771 @@
 <link rel="manifest" href="/manifest.json"/>
 <meta name="theme-color" content="#a855f7"/>
 <link rel="apple-touch-icon" href="/icon-192.png"/>
-
 <style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #0b1120;
-  color: white;
-  height: 100vh;
-  display: flex;
-  overflow: hidden;
-}
-
-/* ===== SIDEBAR ===== */
-#sidebar {
-  width: 280px;
-  min-width: 280px;
-  background: #0a0f1c;
-  border-right: 1px solid #1f2937;
-  display: flex;
-  flex-direction: column;
-  transition: 0.3s;
-}
-#sidebar.hidden { margin-left: -280px; }
-
-.sidebar-head { padding: 14px; border-bottom: 1px solid #1f2937; }
-.new-chat-btn {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #374151;
-  background: linear-gradient(90deg, #7c3aed, #2563eb);
-  color: white;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-}
-.new-chat-btn:hover { opacity: 0.9; }
-
-.sidebar-nav {
-  padding: 8px;
-  border-bottom: 1px solid #1f2937;
-}
-.nav-item {
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  color: #d1d5db;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 2px;
-}
-.nav-item:hover { background: #1f2937; }
-.nav-item.active { background: #2563eb; color: white; }
-
-.chat-list-header {
-  padding: 12px 14px 6px;
-  font-size: 11px;
-  color: #6b7280;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-.chat-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
-.chat-item {
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  color: #d1d5db;
-  margin-bottom: 2px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.chat-item:hover { background: #1f2937; }
-.chat-item.active { background: #2563eb; color: white; }
-.chat-title {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.chat-item .del-btn {
-  background: none;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  font-size: 14px;
-  opacity: 0;
-  transition: 0.2s;
-  padding: 2px 6px;
-}
-.chat-item:hover .del-btn { opacity: 1; }
-.chat-item .del-btn:hover { color: #ef4444; }
-
-.sidebar-foot {
-  padding: 12px;
-  border-top: 1px solid #1f2937;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.user-avatar {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #a855f7, #3b82f6);
-}
-.user-info { flex: 1; overflow: hidden; }
-.user-info b { font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.user-info small { font-size: 11px; color: #9ca3af; }
-.logout-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; }
-
-/* ===== MAIN ===== */
-#main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: radial-gradient(circle at top, #1a0b2e, #0b1120 70%);
-  min-width: 0;
-}
-
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 22px;
-  border-bottom: 1px solid #1f2937;
-}
-.menu-btn { background: none; border: none; color: white; font-size: 22px; cursor: pointer; margin-right: 10px; }
-.logo-area { display: flex; align-items: center; gap: 12px; }
-.logo-icon {
-  width: 42px; height: 42px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #a855f7, #3b82f6);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-}
-.logo-text h1 {
-  font-size: 18px; margin: 0;
-  background: linear-gradient(90deg, #a855f7, #3b82f6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.logo-text p { font-size: 11px; margin: 0; color: #9ca3af; }
-.header-btns { display: flex; gap: 8px; align-items: center; }
-.install-btn, .voice-toggle {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: none; color: white; cursor: pointer; font-weight: 500;
-  font-size: 13px;
-}
-.install-btn { background: linear-gradient(90deg, #7c3aed, #2563eb); }
-.voice-toggle { background: #10b981; }
-.voice-toggle.off { background: #ef4444; }
-
-#chat {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex; flex-direction: column;
-  gap: 14px;
-}
-
-/* ===== WELCOME ===== */
-.welcome { text-align: center; margin-top: 30px; padding: 0 20px; }
-.brain {
-  width: 80px; height: 80px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #a855f7, #3b82f6);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 36px;
-  margin: 0 auto 20px;
-  box-shadow: 0 0 40px rgba(168, 85, 247, 0.4);
-}
-.welcome h2 { font-size: 28px; margin: 0; }
-.welcome h2 em {
-  font-style: normal;
-  background: linear-gradient(90deg, #facc15, #f97316);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.welcome p { color: #9ca3af; margin-top: 6px; }
-
-.start-chat-btn {
-  margin-top: 24px;
-  padding: 14px 32px;
-  border-radius: 30px;
-  border: none;
-  background: linear-gradient(90deg, #7c3aed, #2563eb);
-  color: white;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 15px;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
-}
-.start-chat-btn:hover { transform: translateY(-2px); }
-
-.demo-box {
-  margin: 20px auto;
-  max-width: 500px;
-  background: rgba(168, 85, 247, 0.1);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  padding: 14px 18px;
-  border-radius: 12px;
-  text-align: left;
-  font-size: 13px;
-  color: #d1d5db;
-}
-.demo-box b { color: #a855f7; }
-
-.cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  max-width: 600px;
-  margin: 25px auto 0;
-}
-.card {
-  background: #111827;
-  padding: 16px;
-  border-radius: 12px;
-  cursor: pointer;
-  border: 1px solid #1f2937;
-  transition: 0.2s;
-}
-.card:hover { background: #1f2937; transform: translateY(-2px); }
-.card h3 { margin: 0 0 4px; font-size: 15px; }
-.card p { margin: 0; color: #9ca3af; font-size: 12px; }
-
-/* ===== MESSAGES ===== */
-.message {
-  max-width: 75%;
-  padding: 12px 16px;
-  border-radius: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  font-size: 14px;
-  word-wrap: break-word;
-  animation: fadeIn 0.3s ease;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.user { align-self: flex-end; background: linear-gradient(90deg, #2563eb, #1d4ed8); }
-.bot { align-self: flex-start; background: #1f2937; }
-
-/* ===== TYPING ANIMATION ===== */
-.typing {
-  align-self: flex-start;
-  background: #1f2937;
-  padding: 14px 20px;
-  border-radius: 14px;
-  display: flex;
-  gap: 4px;
-}
-.typing span {
-  width: 8px; height: 8px;
-  background: #9ca3af;
-  border-radius: 50%;
-  animation: bounce 1.4s infinite;
-}
-.typing span:nth-child(2) { animation-delay: 0.2s; }
-.typing span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes bounce {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-  40% { transform: scale(1); opacity: 1; }
-}
-
-/* ===== INPUT ===== */
-#inputArea {
-  display: flex;
-  padding: 14px;
-  gap: 8px;
-  border-top: 1px solid #1f2937;
-  background: rgba(15,23,42,0.9);
-}
-input {
-  flex: 1;
-  padding: 12px;
-  border-radius: 25px;
-  border: none; outline: none;
-  background: #1f2937; color: white;
-  min-width: 0;
-  font-size: 14px;
-}
-button.send {
-  padding: 10px 20px;
-  border-radius: 25px;
-  border: none;
-  background: linear-gradient(90deg, #7c3aed, #2563eb);
-  color: white; cursor: pointer; font-weight: 600;
-  white-space: nowrap;
-}
-button.send:disabled { opacity: 0.5; cursor: not-allowed; }
-button.voice {
-  border-radius: 50%;
-  width: 42px; height: 42px;
-  min-width: 42px;
-  border: none;
-  background: #1f2937;
-  color: white; cursor: pointer;
-  font-size: 18px;
-}
-button.voice.listening {
-  background: #ef4444;
-  animation: pulse 1s infinite;
-}
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-footer { text-align: center; font-size: 12px; padding: 6px; color: #6b7280; }
-
-/* ===== TOAST NOTIFICATION ===== */
-#toast {
-  position: fixed;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #1f2937;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  border-left: 4px solid #10b981;
-  font-size: 13px;
-  z-index: 1000;
-  display: none;
-  animation: slideUp 0.3s ease;
-}
-#toast.error { border-left-color: #ef4444; }
-@keyframes slideUp {
-  from { opacity: 0; transform: translate(-50%, 20px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-/* ===== MODAL ===== */
-.modal-bg {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.9);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 999;
-}
-.modal {
-  background: #111827;
-  padding: 40px 30px;
-  border-radius: 16px;
-  max-width: 420px;
-  width: 90%;
-  text-align: center;
-  border: 1px solid #1f2937;
-  max-height: 85vh;
-  overflow-y: auto;
-}
-.modal .brain-big {
-  width: 70px; height: 70px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #a855f7, #3b82f6);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 32px;
-  margin: 0 auto 16px;
-}
-.modal h2 {
-  margin: 0 0 8px;
-  background: linear-gradient(90deg, #a855f7, #3b82f6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.modal p { color: #9ca3af; margin: 0 0 24px; font-size: 14px; }
-
-.close-modal {
-  position: absolute;
-  top: 10px; right: 14px;
-  background: none; border: none;
-  color: white; font-size: 22px;
-  cursor: pointer;
-}
-
-.google-btn {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #374151;
-  background: white;
-  color: #1f2937;
-  cursor: pointer;
-  font-weight: 500;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  font-size: 14px;
-}
-.google-btn:hover { background: #f3f4f6; }
-
-/* ===== MEMORY/PROFILE/SETTINGS DASHBOARD ===== */
-.dashboard {
-  text-align: left;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-.memory-item {
-  background: #1f2937;
-  padding: 12px 16px;
-  border-radius: 10px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.memory-item .label {
-  color: #a855f7;
-  font-weight: 600;
-  font-size: 12px;
-  text-transform: uppercase;
-}
-.memory-item .value {
-  color: white;
-  font-size: 14px;
-  margin-top: 2px;
-}
-.memory-item .del-mem {
-  background: #ef4444;
-  border: none;
-  color: white;
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.setting-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid #1f2937;
-}
-.setting-row:last-child { border-bottom: none; }
-.setting-row .label { font-size: 14px; }
-.setting-row .desc { font-size: 11px; color: #9ca3af; margin-top: 2px; }
-
-.danger-btn {
-  background: #ef4444;
-  border: none;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.star-rating {
-  font-size: 32px;
-  cursor: pointer;
-  user-select: none;
-  margin: 10px 0;
-}
-.star { color: #374151; }
-.star.active { color: #facc15; }
-
-textarea {
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #374151;
-  background: #1f2937;
-  color: white;
-  font-family: inherit;
-  resize: vertical;
-  min-height: 80px;
-  outline: none;
-}
-
-/* ===== OVERLAY ===== */
-#sidebarOverlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 99;
-}
-#sidebarOverlay.active { display: block; }
-
-/* ===== MOBILE ===== */
-@media (max-width: 768px) {
-  body { display: block; height: 100vh; overflow: hidden; }
-  #sidebar {
-    position: fixed; top: 0; left: 0;
-    height: 100vh; width: 280px;
-    z-index: 100; margin-left: 0;
-    transform: translateX(0);
-    transition: transform 0.3s ease;
-    box-shadow: 2px 0 20px rgba(0,0,0,0.5);
-  }
-  #sidebar.hidden { margin-left: 0; transform: translateX(-100%); box-shadow: none; }
-  #main { width: 100%; height: 100vh; }
-  header { padding: 10px 12px; }
-  .logo-icon { width: 34px; height: 34px; font-size: 16px; border-radius: 8px; }
-  .logo-text h1 { font-size: 15px; }
-  .logo-text p { font-size: 9px; }
-  .install-btn, .voice-toggle { padding: 6px 10px; font-size: 11px; }
-  .welcome h2 { font-size: 22px; }
-  .brain { width: 60px; height: 60px; font-size: 28px; }
-  .cards { grid-template-columns: 1fr; padding: 0 10px; }
-  .message { max-width: 88%; font-size: 13px; }
-  #inputArea { padding: 10px; gap: 6px; }
-  input { padding: 10px 14px; font-size: 14px; }
-  button.send { padding: 10px 14px; font-size: 13px; }
-  button.voice { width: 38px; height: 38px; min-width: 38px; }
-  .modal { padding: 30px 20px; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0b1120;color:white;height:100vh;display:flex;overflow:hidden}
+#sidebar{width:280px;min-width:280px;background:#0a0f1c;border-right:1px solid #1f2937;display:flex;flex-direction:column;transition:0.3s}
+#sidebar.hidden{margin-left:-280px}
+.sidebar-head{padding:14px;border-bottom:1px solid #1f2937}
+.new-chat-btn{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(90deg,#7c3aed,#2563eb);color:white;cursor:pointer;font-weight:600;font-size:14px}
+.sidebar-nav{padding:8px;border-bottom:1px solid #1f2937}
+.nav-item{padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:#d1d5db;display:flex;align-items:center;gap:10px;margin-bottom:2px}
+.nav-item:hover{background:#1f2937}
+.chat-list-header{padding:12px 14px 6px;font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600}
+.chat-list{flex:1;overflow-y:auto;padding:4px 8px}
+.chat-item{padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:#d1d5db;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center}
+.chat-item:hover{background:#1f2937}
+.chat-item.active{background:#2563eb;color:white}
+.chat-title{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-item .del-btn{background:none;border:none;color:#9ca3af;cursor:pointer;font-size:14px;opacity:0;padding:2px 6px}
+.chat-item:hover .del-btn{opacity:1}
+.chat-item .del-btn:hover{color:#ef4444}
+.sidebar-foot{padding:12px;border-top:1px solid #1f2937;display:flex;align-items:center;gap:10px}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#a855f7,#3b82f6)}
+.user-info{flex:1;overflow:hidden}
+.user-info b{font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-info small{font-size:11px;color:#9ca3af}
+.logout-btn{background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px}
+#main{flex:1;display:flex;flex-direction:column;background:radial-gradient(circle at top,#1a0b2e,#0b1120 70%);min-width:0}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 22px;border-bottom:1px solid #1f2937}
+.menu-btn{background:none;border:none;color:white;font-size:22px;cursor:pointer;margin-right:10px}
+.logo-area{display:flex;align-items:center;gap:12px}
+.logo-icon{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#a855f7,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo-text h1{font-size:18px;background:linear-gradient(90deg,#a855f7,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-text p{font-size:11px;color:#9ca3af}
+.header-btns{display:flex;gap:8px;align-items:center}
+.install-btn,.voice-toggle{padding:8px 14px;border-radius:8px;border:none;color:white;cursor:pointer;font-weight:500;font-size:13px}
+.install-btn{background:linear-gradient(90deg,#7c3aed,#2563eb)}
+.voice-toggle{background:#10b981}
+.voice-toggle.off{background:#ef4444}
+#chat{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+.welcome{text-align:center;margin-top:30px;padding:0 20px}
+.brain{width:80px;height:80px;border-radius:16px;background:linear-gradient(135deg,#a855f7,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px;box-shadow:0 0 40px rgba(168,85,247,0.4)}
+.welcome h2{font-size:28px}
+.welcome h2 em{font-style:normal;background:linear-gradient(90deg,#facc15,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.welcome p{color:#9ca3af;margin-top:6px}
+.start-chat-btn{margin-top:20px;padding:14px 32px;border-radius:30px;border:none;background:linear-gradient(90deg,#7c3aed,#2563eb);color:white;cursor:pointer;font-weight:600;font-size:15px;box-shadow:0 4px 20px rgba(124,58,237,0.4)}
+.demo-box{margin:20px auto;max-width:500px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);padding:14px 18px;border-radius:12px;text-align:left;font-size:13px;color:#d1d5db}
+.demo-box b{color:#a855f7}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:600px;margin:25px auto 0}
+.card{background:#111827;padding:16px;border-radius:12px;cursor:pointer;border:1px solid #1f2937;transition:0.2s}
+.card:hover{background:#1f2937;transform:translateY(-2px)}
+.card h3{margin-bottom:4px;font-size:15px}
+.card p{color:#9ca3af;font-size:12px}
+.message{max-width:75%;padding:12px 16px;border-radius:14px;line-height:1.6;white-space:pre-wrap;font-size:14px;word-wrap:break-word;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.user{align-self:flex-end;background:linear-gradient(90deg,#2563eb,#1d4ed8)}
+.bot{align-self:flex-start;background:#1f2937}
+.typing{align-self:flex-start;background:#1f2937;padding:14px 20px;border-radius:14px;display:flex;gap:5px}
+.typing span{width:8px;height:8px;background:#9ca3af;border-radius:50%;animation:bounce 1.4s infinite}
+.typing span:nth-child(2){animation-delay:0.2s}
+.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+#inputArea{display:flex;padding:14px;gap:8px;border-top:1px solid #1f2937;background:rgba(15,23,42,0.9)}
+input{flex:1;padding:12px;border-radius:25px;border:none;outline:none;background:#1f2937;color:white;min-width:0;font-size:14px}
+button.send{padding:10px 20px;border-radius:25px;border:none;background:linear-gradient(90deg,#7c3aed,#2563eb);color:white;cursor:pointer;font-weight:600;white-space:nowrap}
+button.send:disabled{opacity:0.5;cursor:not-allowed}
+button.voice{border-radius:50%;width:42px;height:42px;min-width:42px;border:none;background:#1f2937;color:white;cursor:pointer;font-size:18px}
+button.voice.listening{background:#ef4444;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+footer{text-align:center;font-size:12px;padding:6px;color:#6b7280}
+#toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1f2937;color:white;padding:12px 20px;border-radius:8px;border-left:4px solid #10b981;font-size:13px;z-index:1000;display:none;animation:slideUp 0.3s ease}
+#toast.error{border-left-color:#ef4444}
+@keyframes slideUp{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:999}
+.modal{background:#111827;padding:30px;border-radius:16px;max-width:450px;width:90%;text-align:center;border:1px solid #1f2937;max-height:85vh;overflow-y:auto;position:relative}
+.modal .brain-big{width:70px;height:70px;border-radius:16px;background:linear-gradient(135deg,#a855f7,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 16px}
+.modal h2{margin-bottom:8px;background:linear-gradient(90deg,#a855f7,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.modal p{color:#9ca3af;margin-bottom:20px;font-size:14px}
+.close-modal{position:absolute;top:10px;right:14px;background:none;border:none;color:white;font-size:22px;cursor:pointer}
+.google-btn{width:100%;padding:12px;border-radius:10px;border:1px solid #374151;background:white;color:#1f2937;cursor:pointer;font-weight:500;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px}
+.dashboard{text-align:left;max-height:55vh;overflow-y:auto}
+.memory-item{background:#1f2937;padding:12px 16px;border-radius:10px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.memory-item .label{color:#a855f7;font-weight:600;font-size:11px;text-transform:uppercase}
+.memory-item .value{color:white;font-size:14px;margin-top:2px}
+.memory-item .del-mem{background:#ef4444;border:none;color:white;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1f2937}
+.setting-row:last-child{border-bottom:none}
+.setting-row .label{font-size:14px}
+.setting-row .desc{font-size:11px;color:#9ca3af;margin-top:2px}
+.danger-btn{background:#ef4444;border:none;color:white;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px}
+.star-rating{font-size:32px;cursor:pointer;user-select:none;margin:10px 0;text-align:center}
+.star{color:#374151}
+.star.active{color:#facc15}
+textarea{width:100%;padding:12px;border-radius:8px;border:1px solid #374151;background:#1f2937;color:white;font-family:inherit;resize:vertical;min-height:80px;outline:none}
+.primary-btn{padding:12px 24px;border-radius:8px;border:none;background:linear-gradient(90deg,#7c3aed,#2563eb);color:white;cursor:pointer;font-weight:600;font-size:14px;width:100%;margin-top:12px}
+#sidebarOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
+#sidebarOverlay.active{display:block}
+@media(max-width:768px){
+body{display:block;height:100vh;overflow:hidden}
+#sidebar{position:fixed;top:0;left:0;height:100vh;width:280px;z-index:100;margin-left:0;transform:translateX(0);transition:transform 0.3s ease;box-shadow:2px 0 20px rgba(0,0,0,0.5)}
+#sidebar.hidden{margin-left:0;transform:translateX(-100%);box-shadow:none}
+#main{width:100%;height:100vh}
+header{padding:10px 12px}
+.logo-icon{width:34px;height:34px;font-size:16px}
+.logo-text h1{font-size:15px}
+.logo-text p{font-size:9px}
+.install-btn,.voice-toggle{padding:6px 10px;font-size:11px}
+.welcome h2{font-size:22px}
+.brain{width:60px;height:60px;font-size:28px}
+.cards{grid-template-columns:1fr;padding:0 10px}
+.message{max-width:88%;font-size:13px}
+#inputArea{padding:10px;gap:6px}
+input{padding:10px 14px;font-size:14px}
+button.send{padding:10px 14px;font-size:13px}
+button.voice{width:38px;height:38px;min-width:38px}
+.modal{padding:25px 20px}
 }
 </style>
 </head>
+<body>
+
+<div id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div id="toast"></div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-bg" id="loginModal">
+  <div class="modal">
+    <div class="brain-big">🧠</div>
+    <h2>Memory AI Pro</h2>
+    <p>Sign in to save your memories forever</p>
+    <button class="google-btn" onclick="loginGoogle()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continue with Google
+    </button>
+  </div>
+</div>
+
+<!-- MEMORY DASHBOARD MODAL -->
+<div class="modal-bg" id="memoryModal" style="display:none">
+  <div class="modal">
+    <button class="close-modal" onclick="closeModal('memoryModal')">×</button>
+    <div class="brain-big">🧠</div>
+    <h2>Your Memories</h2>
+    <p>Yeh sab maine aapke baare mein yaad rakha hai</p>
+    <div class="dashboard" id="memoryDashboard"></div>
+    <button class="danger-btn" style="margin-top:16px;width:100%" onclick="clearAllMemories()">🗑️ Clear All Memories</button>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="modal-bg" id="profileModal" style="display:none">
+  <div class="modal">
+    <button class="close-modal" onclick="closeModal('profileModal')">×</button>
+    <img id="profileAvatar" style="width:80px;height:80px;border-radius:50%;margin-bottom:12px"/>
+    <h2 id="profileName">User</h2>
+    <p id="profileEmail">user@email.com</p>
+    <div class="dashboard">
+      <div class="memory-item"><div><div class="label">Total Memories</div><div class="value" id="statMemories">0</div></div></div>
+      <div class="memory-item"><div><div class="label">Total Chats</div><div class="value" id="statChats">0</div></div></div>
+      <div class="memory-item"><div><div class="label">Total Messages</div><div class="value" id="statMessages">0</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="settingsModal" style="display:none">
+  <div class="modal">
+    <button class="close-modal" onclick="closeModal('settingsModal')">×</button>
+    <div class="brain-big">⚙️</div>
+    <h2>Settings</h2>
+    <p>Customize your experience</p>
+    <div class="dashboard">
+      <div class="setting-row">
+        <div><div class="label">🔊 Voice Output</div><div class="desc">AI replies speak karega</div></div>
+        <button class="primary-btn" style="width:auto;margin:0;padding:8px 16px" onclick="toggleVoice()">Toggle</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="label">🗑️ Clear All Chats</div><div class="desc">Saari chat history delete</div></div>
+        <button class="danger-btn" onclick="clearAllChats()">Clear</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="label">🧠 Clear Memory</div><div class="desc">Saari memories delete</div></div>
+        <button class="danger-btn" onclick="clearAllMemories()">Clear</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="label">📱 App Version</div><div class="desc">Memory AI Pro v2.0</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEEDBACK MODAL -->
+<div class="modal-bg" id="feedbackModal" style="display:none">
+  <div class="modal">
+    <button class="close-modal" onclick="closeModal('feedbackModal')">×</button>
+    <div class="brain-big">💬</div>
+    <h2>Feedback</h2>
+    <p>Aapka feedback humein behtar banata hai</p>
+    <div class="star-rating" id="starRating">
+      <span class="star" data-rating="1">★</span>
+      <span class="star" data-rating="2">★</span>
+      <span class="star" data-rating="3">★</span>
+      <span class="star" data-rating="4">★</span>
+      <span class="star" data-rating="5">★</span>
+    </div>
+    <textarea id="feedbackText" placeholder="Apna feedback yahan likhein..."></textarea>
+    <button class="primary-btn" onclick="submitFeedback()">Submit Feedback</button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar" class="hidden">
+  <div class="sidebar-head">
+    <button class="new-chat-btn" onclick="newChat()">＋ New Chat</button>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-item" onclick="openModal('memoryModal');loadMemories()">🧠 Saved Memories</div>
+    <div class="nav-item" onclick="openModal('profileModal');loadStats()">👤 Profile</div>
+    <div class="nav-item" onclick="openModal('settingsModal')">⚙️ Settings</div>
+    <div class="nav-item" onclick="openModal('feedbackModal')">💬 Feedback</div>
+  </div>
+  <div class="chat-list-header">Recent Chats</div>
+  <div class="chat-list" id="chatList"></div>
+  <div class="sidebar-foot">
+    <img class="user-avatar" id="userAvatar" src=""/>
+    <div class="user-info">
+      <b id="userName">User</b>
+      <small id="userEmail">—</small>
+    </div>
+    <button class="logout-btn" onclick="logout()" title="Logout">🚪</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <header>
+    <div style="display:flex;align-items:center">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="logo-area">
+        <div class="logo-icon">🧠</div>
+        <div class="logo-text">
+          <h1>Memory AI Pro</h1>
+          <p>by Deepak Rawat — v2.0</p>
+        </div>
+      </div>
+    </div>
+    <div class="header-btns">
+      <button class="voice-toggle" id="voiceToggle" onclick="toggleVoice()">🔊 Voice ON</button>
+      <button class="install-btn" id="installBtn" onclick="installApp()" style="display:none">⬇ Install</button>
+    </div>
+  </header>
+
+  <div id="chat">
+    <div class="welcome" id="welcome">
+      <div class="brain">🧠</div>
+      <h2>Hello <em id="welcomeName">there</em>! 👋</h2>
+      <p>Main Memory AI Pro hoon — aapki baatein yaad rakhne wala intelligent assistant</p>
+      <div class="demo-box">
+        <b>💡 Example:</b> "Mujhe yaad hai ki aap PUBG khelte ho aur Pizza pasand hai!"
+      </div>
+      <button class="start-chat-btn" onclick="document.getElementById('input').focus()">🚀 Start Chat</button>
+      <div class="cards">
+        <div class="card" onclick="quick('Mera naam kya hai?')">
+          <h3>🧠 Test Memory</h3><p>Check karein yaad hai ya nahi</p>
+        </div>
+        <div class="card" onclick="quick('Mere baare mein kya yaad hai?')">
+          <h3>📋 What You Remember</h3><p>Saari memories dekhein</p>
+        </div>
+        <div class="card" onclick="quick('Ek motivational quote dijiye')">
+          <h3>💡 Motivation</h3><p>Powerful quote</p>
+        </div>
+        <div class="card" onclick="quick('AI ka future kya hai?')">
+          <h3>🚀 AI Future</h3><p>AI trends jaano</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="inputArea">
+    <input id="input" placeholder="Kuch bhi puchein ya batayein..." />
+    <button class="voice" id="voiceBtn" onclick="startVoice()">🎤</button>
+    <button class="send" id="sendBtn" onclick="sendMessage()">Send</button>
+  </div>
+
+  <footer>⚡ Powered by Groq AI + Memory Engine 🧠</footer>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAoTIXZ73ijuOVJfy_2vqBRZqqv_FKTv00",
+  authDomain: "memory-ai-pro.firebaseapp.com",
+  projectId: "memory-ai-pro",
+  storageBucket: "memory-ai-pro.firebasestorage.app",
+  messagingSenderId: "4127560967",
+  appId: "1:4127560967:web:59491772c5c719ecf5a1a2"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+window.loginGoogle = async function() {
+  try { await signInWithPopup(auth, provider); }
+  catch(e) { showToast("Login failed: " + e.message, true); }
+};
+
+window.logout = async function() {
+  if (!confirm("Logout karna chahte hain?")) return;
+  await signOut(auth);
+  location.reload();
+};
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    document.getElementById("loginModal").style.display = "none";
+    if (window.innerWidth > 768) document.getElementById("sidebar").classList.remove("hidden");
+    window.currentUser = {
+      uid: user.uid,
+      name: user.displayName,
+      email: user.email,
+      photo: user.photoURL
+    };
+    document.getElementById("userName").innerText = user.displayName;
+    document.getElementById("userEmail").innerText = user.email;
+    document.getElementById("userAvatar").src = user.photoURL;
+    document.getElementById("welcomeName").innerText = user.displayName.split(" ")[0];
+    if (document.getElementById("profileAvatar")) document.getElementById("profileAvatar").src = user.photoURL;
+    document.getElementById("profileName").innerText = user.displayName;
+    document.getElementById("profileEmail").innerText = user.email;
+    initApp();
+  } else {
+    document.getElementById("loginModal").style.display = "flex";
+    document.getElementById("sidebar").classList.add("hidden");
+  }
+});
+</script>
+
+<script>
+const chatDiv = document.getElementById("chat");
+let voiceEnabled = true;
+let currentChatId = null;
+let isWaiting = false;
+let selectedRating = 0;
+
+function initApp() {
+  loadChats();
+  loadMemoriesQuiet();
+}
+
+function showToast(msg, isError = false) {
+  const toast = document.getElementById("toast");
+  toast.innerText = msg;
+  toast.className = isError ? "error" : "";
+  toast.style.display = "block";
+  setTimeout(() => toast.style.display = "none", 3000);
+}
+
+function openModal(id) {
+  document.getElementById(id).style.display = "flex";
+  if (window.innerWidth <= 768) {
+    document.getElementById("sidebar").classList.add("hidden");
+    document.getElementById("sidebarOverlay").classList.remove("active");
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).style.display = "none";
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  sidebar.classList.toggle("hidden");
+  if (window.innerWidth <= 768) {
+    overlay.classList.toggle("active", !sidebar.classList.contains("hidden"));
+  }
+}
+
+function newChat() {
+  currentChatId = null;
+  chatDiv.innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="brain">🧠</div>
+      <h2>Hello <em>${window.currentUser?.name.split(" ")[0] || "there"}</em>! 👋</h2>
+      <p>Naya chat shuru — kuch bhi puchein!</p>
+      <button class="start-chat-btn" onclick="document.getElementById('input').focus()">🚀 Start Chat</button>
+    </div>`;
+  loadChats();
+  if (window.innerWidth <= 768) {
+    document.getElementById("sidebar").classList.add("hidden");
+    document.getElementById("sidebarOverlay").classList.remove("active");
+  }
+}
+
+async function loadChats() {
+  if (!window.currentUser) return;
+  try {
+    const res = await fetch("/api/chats/list", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ user_id: window.currentUser.uid })
+    });
+    const data = await res.json();
+    const list = document.getElementById("chatList");
+    list.innerHTML = "";
+    if (!data.chats || data.chats.length === 0) {
+      list.innerHTML = '<div style="padding:14px;color:#6b7280;font-size:12px;text-align:center">No chats yet</div>';
+      return;
+    }
+    data.chats.forEach(c => {
+      const div = document.createElement("div");
+      div.className = "chat-item" + (c.chat_id === currentChatId ? " active" : "");
+      div.innerHTML = `<span class="chat-title">${c.title || 'New Chat'}</span><button class="del-btn" onclick="deleteChat(event,'${c.chat_id}')">🗑</button>`;
+      div.onclick = (e) => { if (!e.target.classList.contains('del-btn')) loadChat(c.chat_id); };
+      list.appendChild(div);
+    });
+  } catch(e) { console.log(e); }
+}
+
+async function loadChat(chatId) {
+  currentChatId = chatId;
+  try {
+    const res = await fetch("/api/chats/history", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ chat_id: chatId })
+    });
+    const data = await res.json();
+    chatDiv.innerHTML = "";
+    if (data.history && data.history.length > 0) {
+      data.history.forEach(m => addMessage(m.message, m.role === "user" ? "user" : "bot"));
+    }
+    loadChats();
+    if (window.innerWidth <= 768) {
+      document.getElementById("sidebar").classList.add("hidden");
+      document.getElementById("sidebarOverlay").classList.remove("active");
+    }
+  } catch(e) { console.log(e); }
+}
+
+async function deleteChat(e, chatId) {
+  e.stopPropagation();
+  if (!confirm("Yeh chat delete karein?")) return;
+  await fetch("/api/chats/delete", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ chat_id: chatId })
+  });
+  showToast("Chat deleted ✅");
+  if (chatId === currentChatId) newChat();
+  else loadChats();
+}
+
+async function clearAllChats() {
+  if (!confirm("Saari chats delete karein? Yeh undo nahi hoga!")) return;
+  await fetch("/api/chats/clear", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ user_id: window.currentUser.uid })
+  });
+  showToast("All chats cleared ✅");
+  closeModal('settingsModal');
+  newChat();
+}
+
+async function loadMemories() {
+  if (!window.currentUser) return;
+  try {
+    const res = await fetch("/api/memory/get", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ user_id: window.currentUser.uid })
+    });
+    const data = await res.json();
+    const dashboard = document.getElementById("memoryDashboard");
+    dashboard.innerHTML = "";
+    if (!data.memory || Object.keys(data.memory).length === 0) {
+      dashboard.innerHTML = '<p style="text-align:center;color:#6b7280">Abhi tak koi memory save nahi hui</p>';
+      return;
+    }
+    const labels = {name:"👤 Name",age:"🎂 Age",work:"💼 Work",hobby:"🎮 Hobby",favorite_food:"🍔 Food"};
+    Object.entries(data.memory).forEach(([key, value]) => {
+      const div = document.createElement("div");
+      div.className = "memory-item";
+      div.innerHTML = `<div><div class="label">${labels[key] || key}</div><div class="value">${value}</div></div><button class="del-mem" onclick="deleteMemoryField('${key}')">Delete</button>`;
+      dashboard.appendChild(div);
+    });
+  } catch(e) { console.log(e); }
+}
+
+async function loadMemoriesQuiet() {
+  if (!window.currentUser) return;
+  try {
+    const res = await fetch("/api/memory/get", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ user_id: window.currentUser.uid })
+    });
+    const data = await res.json();
+    if (data.memory && data.memory.name) {
+      document.getElementById("welcomeName").innerText = data.memory.name.split(" ")[0];
+    }
+  } catch(e) {}
+}
+
+async function deleteMemoryField(field) {
+  if (!confirm(`${field} delete karein?`)) return;
+  await fetch("/api/memory/delete-field", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ user_id: window.currentUser.uid, field: field })
+  });
+  showToast("Memory deleted ✅");
+  loadMemories();
+}
+
+async function clearAllMemories() {
+  if (!confirm("Saari memories delete karein?")) return;
+  await fetch("/api/memory/clear", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ user_id: window.currentUser.uid })
+  });
+  showToast("All memories cleared ✅");
+  closeModal('memoryModal');
+  closeModal('settingsModal');
+}
+
+async function loadStats() {
+  if (!window.currentUser) return;
+  try {
+    const res = await fetch("/api/stats", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ user_id: window.currentUser.uid })
+    });
+    const data = await res.json();
+    document.getElementById("statMemories").innerText = data.memory_count || 0;
+    document.getElementById("statChats").innerText = data.chat_count || 0;
+    document.getElementById("statMessages").innerText = data.message_count || 0;
+  } catch(e) {}
+}
+
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  const btn = document.getElementById("voiceToggle");
+  if (voiceEnabled) {
+    btn.innerText = "🔊 Voice ON";
+    btn.classList.remove("off");
+    showToast("Voice enabled ✅");
+  } else {
+    btn.innerText = "🔇 Voice OFF";
+    btn.classList.add("off");
+    speechSynthesis.cancel();
+    showToast("Voice disabled");
+  }
+}
+
+function addMessage(text, type) {
+  const welcome = document.getElementById("welcome");
+  if (welcome) welcome.remove();
+  const div = document.createElement("div");
+  div.className = "message " + type;
+  div.innerText = text;
+  chatDiv.appendChild(div);
+  chatDiv.scrollTop = chatDiv.scrollHeight;
+  return div;
+}
+
+function addTypingIndicator() {
+  const div = document.createElement("div");
+  div.className = "typing";
+  div.id = "typingIndicator";
+  div.innerHTML = "<span></span><span></span><span></span>";
+  chatDiv.appendChild(div);
+  chatDiv.scrollTop = chatDiv.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById("typingIndicator");
+  if (el) el.remove();
+}
+
+function quick(text) {
+  document.getElementById("input").value = text;
+  sendMessage();
+}
+
+async function sendMessage() {
+  if (isWaiting) return;
+  speechSynthesis.cancel();
+  if (!window.currentUser) { showToast("Please login first", true); return; }
+  
+  const input = document.getElementById("input");
+  const message = input.value.trim();
+  if (!message) return;
+
+  addMessage(message, "user");
+  input.value = "";
+  addTypingIndicator();
+  
+  isWaiting = true;
+  document.getElementById("sendBtn").disabled = true;
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ 
+        user_id: window.currentUser.uid, 
+        chat_id: currentChatId,
+        message: message
+      })
+    });
+    
+    removeTypingIndicator();
+    
+    if (!res.ok) {
+      addMessage("⚠️ Server error: " + res.status, "bot");
+      return;
+    }
+
+    const data = await res.json();
+    const reply = data.reply || "Koi reply nahi mila";
+    
+    if (data.chat_id) currentChatId = data.chat_id;
+    
+    addMessage(reply, "bot");
+    
+    if (voiceEnabled) speak(reply);
+    
+    if (data.memory_saved) {
+      showToast("💾 Memory saved!");
+      loadMemoriesQuiet();
+    }
+    
+    loadChats();
+    
+  } catch (e) {
+    removeTypingIndicator();
+    if (!navigator.onLine) {
+      addMessage("⚠️ Internet connection check karein", "bot");
+    } else {
+      addMessage("⚠️ Error: " + e.message, "bot");
+    }
+  } finally {
+    isWaiting = false;
+    document.getElementById("sendBtn").disabled = false;
+  }
+}
+
+function startVoice() {
+  speechSynthesis.cancel();
+  if (!("webkitSpeechRecognition" in window)) { 
+    showToast("Voice not supported in this browser", true); 
+    return; 
+  }
+  const btn = document.getElementById("voiceBtn");
+  const r = new webkitSpeechRecognition();
+  r.lang = "hi-IN";
+  r.continuous = false;
+  r.interimResults = false;
+  
+  btn.classList.add("listening");
+  
+  r.onresult = e => { 
+    document.getElementById("input").value = e.results[0][0].transcript;
+    btn.classList.remove("listening");
+  };
+  r.onerror = () => {
+    btn.classList.remove("listening");
+    showToast("Voice error, try again", true);
+  };
+  r.onend = () => btn.classList.remove("listening");
+  
+  try { r.start(); } catch(e) { btn.classList.remove("listening"); }
+}
+
+function speak(text) {
+  if (!voiceEnabled) return;
+  speechSynthesis.cancel();
+  let cleanText = text
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/`(.*?)`/g, "$1")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/#{1,6}\s/g, "")
+    .replace(/^\s*[-*+•]\s/gm, "")
+    .replace(/[#*_~`>]/g, "")
+    .trim();
+  const s = new SpeechSynthesisUtterance(cleanText);
+  s.lang = "hi-IN";
+  s.rate = 1.0;
+  const voices = speechSynthesis.getVoices();
+  const hindiVoice = voices.find(v => v.lang.includes("hi"));
+  if (hindiVoice) s.voice = hindiVoice;
+  speechSynthesis.speak(s);
+}
+
+// Feedback
+document.querySelectorAll(".star").forEach(star => {
+  star.addEventListener("click", () => {
+    selectedRating = parseInt(star.dataset.rating);
+    document.querySelectorAll(".star").forEach(s => {
+      s.classList.toggle("active", parseInt(s.dataset.rating) <= selectedRating);
+    });
+  });
+});
+
+async function submitFeedback() {
+  if (selectedRating === 0) { showToast("Rating dijiye", true); return; }
+  const text = document.getElementById("feedbackText").value.trim();
+  try {
+    await fetch("/api/feedback", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ 
+        user_id: window.currentUser.uid, 
+        rating: selectedRating, 
+        message: text 
+      })
+    });
+    showToast("Thank you for feedback! 🙏");
+    closeModal('feedbackModal');
+    document.getElementById("feedbackText").value = "";
+    selectedRating = 0;
+    document.querySelectorAll(".star").forEach(s => s.classList.remove("active"));
+  } catch(e) { showToast("Feedback failed", true); }
+}
+
+document.getElementById("input").addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
+});
+
+// Online/Offline detection
+window.addEventListener("offline", () => showToast("⚠️ Internet disconnected", true));
+window.addEventListener("online", () => showToast("✅ Internet connected"));
+
+// PWA Install
+let deferredPrompt;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById("installBtn").style.display = "block";
+});
+
+async function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") document.getElementById("installBtn").style.display = "none";
+    deferredPrompt = null;
+  } else showToast("Already installed");
+}
+
+window.addEventListener("appinstalled", () => {
+  document.getElementById("installBtn").style.display = "none";
+  showToast("App installed! 🎉");
+});
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+}
+</script>
+
+</body>
+</html>
