@@ -54,6 +54,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
 .start-chat-btn{margin-top:20px;padding:14px 32px;border-radius:30px;border:none;background:linear-gradient(90deg,#7c3aed,#2563eb);color:white;cursor:pointer;font-weight:600;font-size:15px;box-shadow:0 4px 20px rgba(124,58,237,0.4)}
 .demo-box{margin:20px auto;max-width:500px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);padding:14px 18px;border-radius:12px;text-align:left;font-size:13px;color:#d1d5db}
 .demo-box b{color:#a855f7}
+.ai-disclaimer{margin:14px auto;max-width:500px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);padding:10px 14px;border-radius:10px;text-align:left;font-size:12px;color:#fbbf24;display:flex;align-items:center;gap:8px}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:600px;margin:25px auto 0}
 .card{background:#111827;padding:16px;border-radius:12px;cursor:pointer;border:1px solid #1f2937;transition:0.2s}
 .card:hover{background:#1f2937;transform:translateY(-2px)}
@@ -91,6 +92,8 @@ button.voice{border-radius:50%;width:42px;height:42px;min-width:42px;border:none
 button.voice.listening{background:#ef4444;animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 footer{text-align:center;font-size:12px;padding:6px;color:#6b7280}
+footer a{color:#9ca3af;text-decoration:none;margin:0 6px}
+footer a:hover{color:#a855f7;text-decoration:underline}
 #toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1f2937;color:white;padding:12px 20px;border-radius:8px;border-left:4px solid #10b981;font-size:13px;z-index:1000;display:none;animation:slideUp 0.3s ease}
 #toast.error{border-left-color:#ef4444}
 @keyframes slideUp{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
@@ -101,6 +104,9 @@ footer{text-align:center;font-size:12px;padding:6px;color:#6b7280}
 .modal p{color:#9ca3af;margin-bottom:20px;font-size:14px}
 .close-modal{position:absolute;top:10px;right:14px;background:none;border:none;color:white;font-size:22px;cursor:pointer}
 .google-btn{width:100%;padding:12px;border-radius:10px;border:1px solid #374151;background:white;color:#1f2937;cursor:pointer;font-weight:500;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px}
+.login-links{margin-top:14px;font-size:11px;color:#6b7280;text-align:center}
+.login-links a{color:#a855f7;text-decoration:none}
+.login-links a:hover{text-decoration:underline}
 .dashboard{text-align:left;max-height:55vh;overflow-y:auto}
 .memory-item{background:#1f2937;padding:12px 16px;border-radius:10px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
 .memory-item .label{color:#a855f7;font-weight:600;font-size:11px;text-transform:uppercase}
@@ -110,7 +116,13 @@ footer{text-align:center;font-size:12px;padding:6px;color:#6b7280}
 .setting-row:last-child{border-bottom:none}
 .setting-row .label{font-size:14px}
 .setting-row .desc{font-size:11px;color:#9ca3af;margin-top:2px}
+.setting-row a.legal-link{color:#a855f7;text-decoration:none;padding:8px 14px;border:1px solid #374151;border-radius:6px;font-size:13px}
+.setting-row a.legal-link:hover{background:#1f2937}
 .danger-btn{background:#ef4444;border:none;color:white;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px}
+.danger-btn-full{background:#ef4444;border:none;color:white;padding:12px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;width:100%;margin-top:16px}
+.danger-section{margin-top:20px;padding:16px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px}
+.danger-section h3{color:#ef4444;font-size:14px;margin-bottom:8px}
+.danger-section p{color:#9ca3af;font-size:12px;margin-bottom:12px}
 .star-rating{font-size:32px;cursor:pointer;user-select:none;margin:10px 0;text-align:center}
 .star{color:#374151}
 .star.active{color:#facc15}
@@ -154,6 +166,10 @@ button.voice{width:38px;height:38px;min-width:38px}
       <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
       Continue with Google
     </button>
+    <div class="login-links">
+      By continuing, you agree to our<br>
+      <a href="/terms" target="_blank">Terms of Service</a> & <a href="/privacy" target="_blank">Privacy Policy</a>
+    </div>
   </div>
 </div>
 
@@ -202,8 +218,21 @@ button.voice{width:38px;height:38px;min-width:38px}
         <button class="danger-btn" onclick="clearAllMemories()">Clear</button>
       </div>
       <div class="setting-row">
+        <div><div class="label">🔒 Privacy Policy</div><div class="desc">How we handle your data</div></div>
+        <a href="/privacy" target="_blank" class="legal-link">View</a>
+      </div>
+      <div class="setting-row">
+        <div><div class="label">📋 Terms of Service</div><div class="desc">App usage terms</div></div>
+        <a href="/terms" target="_blank" class="legal-link">View</a>
+      </div>
+      <div class="setting-row">
         <div><div class="label">📱 App Version</div><div class="desc">Memory AI Pro v2.1</div></div>
       </div>
+    </div>
+    <div class="danger-section">
+      <h3>⚠️ Danger Zone</h3>
+      <p>Delete your account and all associated data permanently. This action cannot be undone.</p>
+      <button class="danger-btn-full" onclick="deleteAccount()">🗑️ Delete My Account</button>
     </div>
   </div>
 </div>
@@ -274,6 +303,9 @@ button.voice{width:38px;height:38px;min-width:38px}
       <div class="demo-box">
         <b>💡 Try Me:</b> "Coding kya hai detail mein batao" — main ChatGPT level detailed answer dunga!
       </div>
+      <div class="ai-disclaimer">
+        ⚠️ <span>AI-generated responses may contain errors. Verify important information with professionals.</span>
+      </div>
       <button class="start-chat-btn" onclick="startChatNow()">🚀 Start Chat</button>
       <div class="cards">
         <div class="card" onclick="quick('Mera naam kya hai?')">
@@ -293,12 +325,16 @@ button.voice{width:38px;height:38px;min-width:38px}
   </div>
 
   <div id="inputArea">
-    <input id="input" placeholder="Kuch bhi puchein ya batayein..." />
+    <input id="input" placeholder="Kuch bhi puchein ya batayein..." maxlength="4000" />
     <button class="voice" id="voiceBtn" onclick="startVoice()">🎤</button>
     <button class="send" id="sendBtn" onclick="sendMessage()">Send</button>
   </div>
 
-  <footer>⚡ Powered by Groq AI + Memory Engine 🧠</footer>
+  <footer>
+    ⚡ Powered by Groq AI + Memory Engine 🧠
+    <br>
+    <a href="/privacy" target="_blank">Privacy</a> • <a href="/terms" target="_blank">Terms</a>
+  </footer>
 </div>
 
 <script type="module">
@@ -329,6 +365,44 @@ window.logout = async function() {
   location.reload();
 };
 
+window.deleteAccount = async function() {
+  if (!window.currentUser) return;
+  
+  const confirm1 = confirm("⚠️ WARNING: This will permanently delete your account and ALL data including:\n\n• All memories\n• All chat history\n• Profile information\n\nThis action CANNOT be undone. Are you sure?");
+  if (!confirm1) return;
+  
+  const confirm2 = prompt('Type "DELETE" to confirm permanent account deletion:');
+  if (confirm2 !== "DELETE") {
+    showToast("Account deletion cancelled", false);
+    return;
+  }
+  
+  try {
+    const res = await fetch("/api/account/delete", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ 
+        user_id: window.currentUser.uid,
+        confirm: true 
+      })
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok) {
+      showToast("Account deleted successfully", false);
+      setTimeout(async () => {
+        await signOut(auth);
+        location.reload();
+      }, 1500);
+    } else {
+      showToast("Error: " + (data.error || "Failed to delete"), true);
+    }
+  } catch(e) {
+    showToast("Error deleting account", true);
+  }
+};
+
 onAuthStateChanged(auth, (user) => {
   if (user) {
     document.getElementById("loginModal").style.display = "none";
@@ -340,7 +414,19 @@ onAuthStateChanged(auth, (user) => {
       photo: user.photoURL || ""
     };
     document.getElementById("userName").innerText = user.displayName || "User";
-    document.getElementById("userEmail").innerText = user.email || "";
+    
+    // Mask email for privacy
+    const email = user.email || "";
+    let maskedEmail = email;
+    if (email && email.includes("@")) {
+      const parts = email.split("@");
+      const local = parts[0];
+      if (local.length > 4) {
+        maskedEmail = local.substring(0, 2) + "***" + local.substring(local.length - 2) + "@" + parts[1];
+      }
+    }
+    document.getElementById("userEmail").innerText = maskedEmail;
+    
     if (user.photoURL) document.getElementById("userAvatar").src = user.photoURL;
     document.getElementById("welcomeName").innerText = (user.displayName || "there").split(" ")[0];
     if (document.getElementById("profileAvatar")) document.getElementById("profileAvatar").src = user.photoURL || "";
@@ -595,7 +681,6 @@ function toggleVoice() {
   }
 }
 
-// 🎯 NEW: Render markdown for bot messages
 function addMessage(text, type) {
   var welcome = document.getElementById("welcome");
   if (welcome) welcome.remove();
@@ -603,14 +688,12 @@ function addMessage(text, type) {
   div.className = "message " + type;
   
   if (type === "bot" && typeof marked !== 'undefined') {
-    // Render markdown to HTML for bot
     try {
       div.innerHTML = marked.parse(text);
     } catch(e) {
       div.innerText = text;
     }
   } else {
-    // Plain text for user
     div.innerText = text;
   }
   
@@ -646,6 +729,11 @@ async function sendMessage() {
   var input = document.getElementById("input");
   var message = input.value.trim();
   if (!message) return;
+  
+  if (message.length > 4000) {
+    showToast("Message too long (max 4000 chars)", true);
+    return;
+  }
 
   addMessage(message, "user");
   input.value = "";
@@ -666,6 +754,11 @@ async function sendMessage() {
     });
 
     removeTypingIndicator();
+
+    if (res.status === 429) {
+      addMessage("⏳ Bahut zyada requests! Thodi der ruk ke try karein.", "bot");
+      return;
+    }
 
     if (!res.ok) {
       addMessage("⚠️ Server error: " + res.status, "bot");
