@@ -7,6 +7,7 @@
 <link rel="manifest" href="/manifest.json"/>
 <meta name="theme-color" content="#a855f7"/>
 <link rel="apple-touch-icon" href="/icon-192.png"/>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;background:#0b1120;color:white;height:100vh;display:flex;overflow:hidden}
@@ -51,7 +52,6 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
 .welcome h2 em{font-style:normal;background:linear-gradient(90deg,#facc15,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .welcome p{color:#9ca3af;margin-top:6px}
 .start-chat-btn{margin-top:20px;padding:14px 32px;border-radius:30px;border:none;background:linear-gradient(90deg,#7c3aed,#2563eb);color:white;cursor:pointer;font-weight:600;font-size:15px;box-shadow:0 4px 20px rgba(124,58,237,0.4)}
-.start-chat-btn:hover{transform:translateY(-2px)}
 .demo-box{margin:20px auto;max-width:500px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);padding:14px 18px;border-radius:12px;text-align:left;font-size:13px;color:#d1d5db}
 .demo-box b{color:#a855f7}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:600px;margin:25px auto 0}
@@ -59,10 +59,25 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
 .card:hover{background:#1f2937;transform:translateY(-2px)}
 .card h3{margin-bottom:4px;font-size:15px}
 .card p{color:#9ca3af;font-size:12px}
-.message{max-width:75%;padding:12px 16px;border-radius:14px;line-height:1.6;white-space:pre-wrap;font-size:14px;word-wrap:break-word;animation:fadeIn 0.3s ease}
+.message{max-width:80%;padding:14px 18px;border-radius:14px;line-height:1.7;font-size:14px;word-wrap:break-word;animation:fadeIn 0.3s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.user{align-self:flex-end;background:linear-gradient(90deg,#2563eb,#1d4ed8)}
+.user{align-self:flex-end;background:linear-gradient(90deg,#2563eb,#1d4ed8);white-space:pre-wrap}
 .bot{align-self:flex-start;background:#1f2937}
+.bot h1,.bot h2,.bot h3{margin:12px 0 8px;color:#a855f7;font-weight:600}
+.bot h1{font-size:20px}
+.bot h2{font-size:18px}
+.bot h3{font-size:16px}
+.bot p{margin:8px 0}
+.bot ul,.bot ol{margin:8px 0;padding-left:24px}
+.bot li{margin:4px 0}
+.bot strong,.bot b{color:#facc15;font-weight:600}
+.bot em,.bot i{color:#a855f7;font-style:italic}
+.bot code{background:#0b1120;padding:2px 6px;border-radius:4px;font-family:'Courier New',monospace;font-size:13px;color:#10b981}
+.bot pre{background:#0b1120;padding:12px;border-radius:8px;overflow-x:auto;margin:10px 0;border:1px solid #374151}
+.bot pre code{background:none;padding:0;color:#e5e7eb;font-size:13px;line-height:1.5}
+.bot a{color:#3b82f6;text-decoration:underline}
+.bot blockquote{border-left:3px solid #a855f7;padding-left:12px;margin:10px 0;color:#d1d5db;font-style:italic}
+.bot hr{border:none;border-top:1px solid #374151;margin:12px 0}
 .typing{align-self:flex-start;background:#1f2937;padding:14px 20px;border-radius:14px;display:flex;gap:5px}
 .typing span{width:8px;height:8px;background:#9ca3af;border-radius:50%;animation:bounce 1.4s infinite}
 .typing span:nth-child(2){animation-delay:0.2s}
@@ -116,7 +131,7 @@ header{padding:10px 12px}
 .welcome h2{font-size:22px}
 .brain{width:60px;height:60px;font-size:28px}
 .cards{grid-template-columns:1fr;padding:0 10px}
-.message{max-width:88%;font-size:13px}
+.message{max-width:92%;font-size:13px;padding:12px 14px}
 #inputArea{padding:10px;gap:6px}
 input{padding:10px 14px;font-size:14px}
 button.send{padding:10px 14px;font-size:13px}
@@ -130,7 +145,6 @@ button.voice{width:38px;height:38px;min-width:38px}
 <div id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div id="toast"></div>
 
-<!-- LOGIN MODAL -->
 <div class="modal-bg" id="loginModal">
   <div class="modal">
     <div class="brain-big">🧠</div>
@@ -143,7 +157,6 @@ button.voice{width:38px;height:38px;min-width:38px}
   </div>
 </div>
 
-<!-- MEMORY DASHBOARD MODAL -->
 <div class="modal-bg" id="memoryModal" style="display:none">
   <div class="modal">
     <button class="close-modal" onclick="closeModal('memoryModal')">×</button>
@@ -155,7 +168,6 @@ button.voice{width:38px;height:38px;min-width:38px}
   </div>
 </div>
 
-<!-- PROFILE MODAL -->
 <div class="modal-bg" id="profileModal" style="display:none">
   <div class="modal">
     <button class="close-modal" onclick="closeModal('profileModal')">×</button>
@@ -170,7 +182,6 @@ button.voice{width:38px;height:38px;min-width:38px}
   </div>
 </div>
 
-<!-- SETTINGS MODAL -->
 <div class="modal-bg" id="settingsModal" style="display:none">
   <div class="modal">
     <button class="close-modal" onclick="closeModal('settingsModal')">×</button>
@@ -191,13 +202,12 @@ button.voice{width:38px;height:38px;min-width:38px}
         <button class="danger-btn" onclick="clearAllMemories()">Clear</button>
       </div>
       <div class="setting-row">
-        <div><div class="label">📱 App Version</div><div class="desc">Memory AI Pro v2.0 by Deepak Rawat</div></div>
+        <div><div class="label">📱 App Version</div><div class="desc">Memory AI Pro v2.1</div></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- FEEDBACK MODAL -->
 <div class="modal-bg" id="feedbackModal" style="display:none">
   <div class="modal">
     <button class="close-modal" onclick="closeModal('feedbackModal')">×</button>
@@ -216,7 +226,6 @@ button.voice{width:38px;height:38px;min-width:38px}
   </div>
 </div>
 
-<!-- SIDEBAR -->
 <div id="sidebar" class="hidden">
   <div class="sidebar-head">
     <button class="new-chat-btn" onclick="newChat()">＋ New Chat</button>
@@ -239,7 +248,6 @@ button.voice{width:38px;height:38px;min-width:38px}
   </div>
 </div>
 
-<!-- MAIN -->
 <div id="main">
   <header>
     <div style="display:flex;align-items:center">
@@ -248,7 +256,7 @@ button.voice{width:38px;height:38px;min-width:38px}
         <div class="logo-icon">🧠</div>
         <div class="logo-text">
           <h1>Memory AI Pro</h1>
-          <p>by Deepak Rawat — v2.0</p>
+          <p>by Deepak Rawat — v2.1</p>
         </div>
       </div>
     </div>
@@ -262,9 +270,9 @@ button.voice{width:38px;height:38px;min-width:38px}
     <div class="welcome" id="welcome">
       <div class="brain">🧠</div>
       <h2>Hello <em id="welcomeName">there</em>! 👋</h2>
-      <p>Main Memory AI Pro hoon — aapki baatein yaad rakhne wala intelligent assistant</p>
+      <p>Main aapka intelligent AI assistant hoon — kuch bhi puchein!</p>
       <div class="demo-box">
-        <b>💡 Memory Demo:</b> Mujhe batayein "Mera naam Deepak hai" — aur phir puchein "Mera naam kya hai?" Main yaad rakhunga!
+        <b>💡 Try Me:</b> "Coding kya hai detail mein batao" — main ChatGPT level detailed answer dunga!
       </div>
       <button class="start-chat-btn" onclick="startChatNow()">🚀 Start Chat</button>
       <div class="cards">
@@ -277,8 +285,8 @@ button.voice{width:38px;height:38px;min-width:38px}
         <div class="card" onclick="quick('Ek motivational quote dijiye')">
           <h3>💡 Motivation</h3><p>Powerful quote paayein</p>
         </div>
-        <div class="card" onclick="quick('AI ka future kya hai?')">
-          <h3>🚀 AI Future</h3><p>AI trends jaanein</p>
+        <div class="card" onclick="quick('AI ka future kya hai detail mein?')">
+          <h3>🚀 AI Future</h3><p>Detailed answer</p>
         </div>
       </div>
     </div>
@@ -293,7 +301,6 @@ button.voice{width:38px;height:38px;min-width:38px}
   <footer>⚡ Powered by Groq AI + Memory Engine 🧠</footer>
 </div>
 
-<!-- FIREBASE AUTH -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -347,13 +354,21 @@ onAuthStateChanged(auth, (user) => {
 });
 </script>
 
-<!-- MAIN APP JAVASCRIPT -->
 <script>
 const chatDiv = document.getElementById("chat");
 let voiceEnabled = true;
 let currentChatId = null;
 let isWaiting = false;
 let selectedRating = 0;
+
+// Configure marked.js
+if (typeof marked !== 'undefined') {
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+    sanitize: false
+  });
+}
 
 function initApp() {
   loadChats();
@@ -434,7 +449,7 @@ async function loadChats() {
       };
       list.appendChild(div);
     });
-  } catch(e) { console.log("loadChats error:", e); }
+  } catch(e) { console.log(e); }
 }
 
 async function loadChat(chatId) {
@@ -457,7 +472,7 @@ async function loadChat(chatId) {
       document.getElementById("sidebar").classList.add("hidden");
       document.getElementById("sidebarOverlay").classList.remove("active");
     }
-  } catch(e) { console.log("loadChat error:", e); }
+  } catch(e) { console.log(e); }
 }
 
 async function deleteChat(e, chatId) {
@@ -474,7 +489,7 @@ async function deleteChat(e, chatId) {
 }
 
 async function clearAllChats() {
-  if (!confirm("Saari chats delete karein? Yeh undo nahi hoga!")) return;
+  if (!confirm("Saari chats delete karein?")) return;
   await fetch("/api/chats/clear", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
@@ -497,7 +512,7 @@ async function loadMemories() {
     var dashboard = document.getElementById("memoryDashboard");
     dashboard.innerHTML = "";
     if (!data.memory || Object.keys(data.memory).length === 0) {
-      dashboard.innerHTML = '<p style="text-align:center;color:#6b7280;padding:20px">Abhi tak koi memory save nahi hui. Chat karein aur apne baare mein batayein!</p>';
+      dashboard.innerHTML = '<p style="text-align:center;color:#6b7280;padding:20px">Abhi tak koi memory save nahi hui.</p>';
       return;
     }
     var labels = {name:"👤 Name", age:"🎂 Age", work:"💼 Work", hobby:"🎮 Hobby", favorite_food:"🍔 Favorite Food"};
@@ -509,7 +524,7 @@ async function loadMemories() {
       div.innerHTML = '<div><div class="label">' + (labels[key] || key) + '</div><div class="value">' + value + '</div></div><button class="del-mem" onclick="deleteMemoryField(\'' + key + '\')">Delete</button>';
       dashboard.appendChild(div);
     });
-  } catch(e) { console.log("loadMemories error:", e); }
+  } catch(e) { console.log(e); }
 }
 
 async function loadMemoriesQuiet() {
@@ -539,7 +554,7 @@ async function deleteMemoryField(field) {
 }
 
 async function clearAllMemories() {
-  if (!confirm("Saari memories delete karein? Yeh undo nahi hoga!")) return;
+  if (!confirm("Saari memories delete karein?")) return;
   await fetch("/api/memory/clear", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
@@ -580,12 +595,25 @@ function toggleVoice() {
   }
 }
 
+// 🎯 NEW: Render markdown for bot messages
 function addMessage(text, type) {
   var welcome = document.getElementById("welcome");
   if (welcome) welcome.remove();
   var div = document.createElement("div");
   div.className = "message " + type;
-  div.innerText = text;
+  
+  if (type === "bot" && typeof marked !== 'undefined') {
+    // Render markdown to HTML for bot
+    try {
+      div.innerHTML = marked.parse(text);
+    } catch(e) {
+      div.innerText = text;
+    }
+  } else {
+    // Plain text for user
+    div.innerText = text;
+  }
+  
   chatDiv.appendChild(div);
   chatDiv.scrollTop = chatDiv.scrollHeight;
   return div;
@@ -640,7 +668,7 @@ async function sendMessage() {
     removeTypingIndicator();
 
     if (!res.ok) {
-      addMessage("⚠️ Server error: " + res.status + ". Kripya phir try karein.", "bot");
+      addMessage("⚠️ Server error: " + res.status, "bot");
       return;
     }
 
@@ -663,9 +691,9 @@ async function sendMessage() {
   } catch (e) {
     removeTypingIndicator();
     if (!navigator.onLine) {
-      addMessage("⚠️ Internet connection check karein aur phir try karein.", "bot");
+      addMessage("⚠️ Internet connection check karein", "bot");
     } else {
-      addMessage("⚠️ Error: " + e.message + ". Kripya phir try karein.", "bot");
+      addMessage("⚠️ Error: " + e.message, "bot");
     }
   } finally {
     isWaiting = false;
@@ -676,7 +704,7 @@ async function sendMessage() {
 function startVoice() {
   speechSynthesis.cancel();
   if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-    showToast("Voice not supported in this browser", true);
+    showToast("Voice not supported", true);
     return;
   }
   var btn = document.getElementById("voiceBtn");
@@ -685,9 +713,7 @@ function startVoice() {
   r.lang = "hi-IN";
   r.continuous = false;
   r.interimResults = false;
-
   btn.classList.add("listening");
-
   r.onresult = function(e) {
     document.getElementById("input").value = e.results[0][0].transcript;
     btn.classList.remove("listening");
@@ -697,7 +723,6 @@ function startVoice() {
     showToast("Voice error, try again", true);
   };
   r.onend = function() { btn.classList.remove("listening"); };
-
   try { r.start(); } catch(e) { btn.classList.remove("listening"); }
 }
 
@@ -723,7 +748,6 @@ function speak(text) {
   speechSynthesis.speak(s);
 }
 
-// Star rating
 document.querySelectorAll(".star").forEach(function(star) {
   star.addEventListener("click", function() {
     selectedRating = parseInt(star.dataset.rating);
@@ -755,24 +779,20 @@ async function submitFeedback() {
     document.getElementById("feedbackText").value = "";
     selectedRating = 0;
     document.querySelectorAll(".star").forEach(function(s) { s.classList.remove("active"); });
-  } catch(e) { showToast("Feedback failed, try again", true); }
+  } catch(e) { showToast("Feedback failed", true); }
 }
 
-// Enter key to send
 document.getElementById("input").addEventListener("keypress", function(e) {
   if (e.key === "Enter") sendMessage();
 });
 
-// Stop speech on typing
 document.getElementById("input").addEventListener("input", function() {
   if (speechSynthesis.speaking) speechSynthesis.cancel();
 });
 
-// Online/Offline detection
-window.addEventListener("offline", function() { showToast("⚠️ Internet disconnected!", true); });
-window.addEventListener("online", function() { showToast("✅ Internet connected!", false); });
+window.addEventListener("offline", function() { showToast("⚠️ Internet disconnected", true); });
+window.addEventListener("online", function() { showToast("✅ Internet connected", false); });
 
-// PWA Install
 var deferredPrompt;
 window.addEventListener("beforeinstallprompt", function(e) {
   e.preventDefault();
@@ -788,7 +808,7 @@ function installApp() {
       deferredPrompt = null;
     });
   } else {
-    showToast("Already installed or not supported", false);
+    showToast("Already installed", false);
   }
 }
 
@@ -797,7 +817,6 @@ window.addEventListener("appinstalled", function() {
   showToast("App installed! 🎉", false);
 });
 
-// Service Worker
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/service-worker.js").catch(function() {});
 }
