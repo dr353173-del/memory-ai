@@ -39,7 +39,6 @@ ILLEGAL_KEYWORDS = [
     "suicide kaise", "khudkhushi kaise"
 ]
 
-# Creator-related questions
 CREATOR_QUESTIONS = [
     "tumhe kisne banaya", "tujhe kisne banaya", "aapko kisne banaya",
     "who made you", "who created you", "your creator",
@@ -55,13 +54,44 @@ MANIPULATION_PATTERNS = [
 ]
 
 
+def detect_language(message: str) -> str:
+    """Detect karo user kis language me bol raha hai"""
+    msg = message.lower().strip()
+    
+    # Hindi/Devanagari script
+    if re.search(r'[\u0900-\u097F]', message):
+        return "hindi"
+    
+    # Common Hindi/Hinglish words
+    hinglish_words = ["hai", "hain", "kya", "mera", "tera", "aap", "tum", "main", 
+                      "kaise", "kyun", "kaun", "kahan", "kab", "nahi", "haan",
+                      "acha", "thik", "bhai", "yaar", "kuch", "sab", "ye", "wo",
+                      "karna", "karta", "karke", "karo", "raha", "rahi", "hoon",
+                      "matlab", "samjha", "samjhi", "batao", "puchho", "bolo"]
+    
+    words = msg.split()
+    if not words:
+        return "english"
+    
+    hindi_count = sum(1 for w in words if w in hinglish_words)
+    
+    # Agar 30%+ words Hinglish hain = Hinglish
+    if hindi_count / len(words) >= 0.25:
+        return "hinglish"
+    
+    # Sirf English ASCII characters
+    if all(ord(c) < 128 for c in message):
+        return "english"
+    
+    return "hinglish"
+
+
 def is_illegal_content(message: str) -> bool:
     msg_lower = message.lower()
     return any(keyword in msg_lower for keyword in ILLEGAL_KEYWORDS)
 
 
 def is_creator_question(message: str) -> bool:
-    """Sirf jab user creator ke baare me pooche"""
     msg_lower = message.lower()
     return any(q in msg_lower for q in CREATOR_QUESTIONS)
 
@@ -73,9 +103,8 @@ def is_manipulation_attempt(message: str) -> bool:
 
 def is_forget_command(message: str) -> bool:
     msg_lower = message.lower()
-    forget_keywords = ["forget", "bhul ja", "delete memory", "clear memory",
-                       "yaad mat rakho", "mat yaad", "memory delete",
-                       "sab bhul ja", "forget everything"]
+    forget_keywords = ["forget everything", "bhul ja sab", "delete memory", "clear memory",
+                       "yaad mat rakho", "memory delete", "sab bhul ja"]
     return any(k in msg_lower for k in forget_keywords)
 
 
@@ -131,7 +160,6 @@ def extract_memory(message: str, memory: dict) -> dict:
         "designer": "Designer", "teacher": "Teacher", "doctor": "Doctor",
         "programmer": "Programmer", "freelancer": "Freelancer",
         "businessman": "Businessman", "youtuber": "YouTuber",
-        "coder": "Coder", "gamer": "Gamer",
     }
     work_triggers = ["i am a", "i'm a", "main ek", "mera kaam", "i work as", "kaam karta", "im a"]
     if any(t in msg_lower for t in work_triggers):
@@ -144,10 +172,9 @@ def extract_memory(message: str, memory: dict) -> dict:
         "gaming": "Gaming", "padhna": "Reading", "reading": "Reading",
         "music": "Music", "cricket": "Cricket", "football": "Football",
         "coding": "Coding", "movies": "Movies", "travel": "Travelling",
-        "gym": "Gym", "photography": "Photography", "singing": "Singing",
-        "dancing": "Dancing", "drawing": "Drawing",
+        "gym": "Gym", "photography": "Photography",
     }
-    if any(t in msg_lower for t in ["hobby", "pasand", "i love", "i like", "shauq", "interest"]):
+    if any(t in msg_lower for t in ["hobby", "pasand", "i love", "i like", "shauq"]):
         for keyword, label in hobby_map.items():
             if keyword in msg_lower:
                 updated["hobby"] = label
@@ -157,8 +184,6 @@ def extract_memory(message: str, memory: dict) -> dict:
         "pizza": "Pizza", "burger": "Burger", "biryani": "Biryani",
         "samosa": "Samosa", "pasta": "Pasta", "chinese": "Chinese",
         "dosa": "Dosa", "rajma": "Rajma Chawal", "paratha": "Paratha",
-        "paneer": "Paneer", "dal": "Dal", "momos": "Momos",
-        "noodles": "Noodles", "ice cream": "Ice Cream",
     }
     if any(t in msg_lower for t in ["food", "khana", "favourite", "favorite", "pasand"]):
         for keyword, label in food_map.items():
@@ -169,17 +194,15 @@ def extract_memory(message: str, memory: dict) -> dict:
     return updated
 
 
-async def call_groq(prompt: str, system_prompt: str) -> str:
+async def call_groq(messages_list: list) -> str:
+    """Send full message history to Groq"""
     for model_name in MODELS:
         try:
             response = client.chat.completions.create(
                 model=model_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt}
-                ],
+                messages=messages_list,
                 temperature=0.75,
-                max_tokens=600,
+                max_tokens=800,
             )
             reply = response.choices[0].message.content.strip()
             print(f"⚡ {model_name} - SUCCESS")
@@ -194,38 +217,44 @@ async def call_groq(prompt: str, system_prompt: str) -> str:
     return None
 
 
-async def process_message(user_id: str, message: str) -> dict:
+async def process_message(user_id: str, message: str, history: list = None) -> dict:
+    """Process message with full conversation history"""
     memory = get_memory(user_id)
+    history = history or []
 
     # Illegal content block
     if is_illegal_content(message):
         return {
-            "reply": "Sorry, is topic pe help nahi kar sakta. Kuch aur puchein!",
+            "reply": "Sorry, can't help with this topic. Try something else!",
             "memory_saved": False,
             "memory": memory
         }
 
-    # Creator question — direct answer
+    # Creator question
     if is_creator_question(message):
         return {
-            "reply": "Mujhe Deepak Rawat (Deepu) ne banaya hai 👨‍💻",
+            "reply": "I was created by Deepak Rawat (Deepu) 👨‍💻",
             "memory_saved": False,
             "memory": memory
         }
 
     # Recall memory
     if is_recall_command(message):
+        lang = detect_language(message)
         info_parts = []
-        if memory.get("name"): info_parts.append(f"• Naam: {memory['name']}")
+        if memory.get("name"): info_parts.append(f"• Name: {memory['name']}")
         if memory.get("age"): info_parts.append(f"• Age: {memory['age']} years")
         if memory.get("work"): info_parts.append(f"• Work: {memory['work']}")
         if memory.get("hobby"): info_parts.append(f"• Hobby: {memory['hobby']}")
         if memory.get("favorite_food"): info_parts.append(f"• Favorite Food: {memory['favorite_food']}")
 
         if info_parts:
-            reply = "Yeh sab yaad hai mujhe aapke baare mein:\n\n" + "\n".join(info_parts) + "\n\nAur kuch batana ho to batayein! ✨"
+            if lang == "english":
+                reply = "Here's what I remember about you:\n\n" + "\n".join(info_parts) + "\n\nAnything else to add? ✨"
+            else:
+                reply = "Yeh sab yaad hai mujhe aapke baare mein:\n\n" + "\n".join(info_parts) + "\n\nAur kuch batana ho to batayein! ✨"
         else:
-            reply = "Abhi tak kuch save nahi hua. Apne baare mein batayein toh yaad rakhunga! 😊"
+            reply = "Nothing saved yet. Tell me about yourself!" if lang == "english" else "Abhi tak kuch save nahi hua. Apne baare mein batayein!"
 
         return {"reply": reply, "memory_saved": False, "memory": memory}
 
@@ -233,12 +262,12 @@ async def process_message(user_id: str, message: str) -> dict:
     if is_forget_command(message):
         clear_all_memory(user_id)
         return {
-            "reply": "Done! Saari memories delete kar di. Fresh start! 🔄",
+            "reply": "Done! All memories cleared. Fresh start! 🔄",
             "memory_saved": False,
             "memory": {}
         }
 
-    # Save new info
+    # Extract & save info
     new_info = extract_memory(message, memory)
     memory_saved = False
 
@@ -248,6 +277,7 @@ async def process_message(user_id: str, message: str) -> dict:
         memory_saved = True
         print(f"💾 Saved: {new_info}")
 
+    # Build user info
     info_parts = []
     if memory.get("name"): info_parts.append(f"Name: {memory['name']}")
     if memory.get("age"): info_parts.append(f"Age: {memory['age']} years")
@@ -257,88 +287,125 @@ async def process_message(user_id: str, message: str) -> dict:
 
     memory_text = "\n".join(info_parts) if info_parts else "No info saved yet"
 
-    # 🎯 SYSTEM PROMPT — NO CREATOR MENTIONS UNLESS ASKED
-    system_prompt = f"""You are an intelligent, smart, and friendly AI assistant.
+    # Detect current language
+    current_lang = detect_language(message)
+    lang_instruction = ""
+    if current_lang == "english":
+        lang_instruction = "USER IS WRITING IN ENGLISH. REPLY ONLY IN ENGLISH. Do NOT mix Hindi words."
+    elif current_lang == "hindi":
+        lang_instruction = "USER IS WRITING IN HINDI. REPLY IN HINDI/HINGLISH naturally."
+    else:
+        lang_instruction = "USER IS WRITING IN HINGLISH. REPLY IN HINGLISH (mix of Hindi and English)."
+
+    # 🎯 SYSTEM PROMPT
+    system_prompt = f"""You are a smart, helpful, intelligent AI assistant — like ChatGPT or Claude. You give detailed, accurate, well-structured answers.
 
 USER'S SAVED INFO:
 {memory_text}
 
-YOUR CORE BEHAVIOR:
-You talk like a smart helpful friend — like ChatGPT or Claude. Natural, direct, confident. You give people answers to their problems. That's your only job.
+🌐 LANGUAGE RULE (CRITICAL):
+{lang_instruction}
 
-CRITICAL RULES — NEVER BREAK:
+CORE BEHAVIOR:
+- Answer questions DIRECTLY and THOROUGHLY
+- Be helpful, smart, knowledgeable
+- Give DETAILED responses with structure when topic needs it
+- Use bullet points, lists, examples when appropriate
+- Be conversational but informative
+- Remember the conversation context (previous messages)
 
-1. ❌ NEVER mention "Deepak Rawat", "Deepu", "creator", "developer", "kisne banaya" in your replies
-   - User doesn't care who made you — they want SOLUTIONS
-   - Only mention creator IF user specifically asks "who made you" (this is already handled separately)
+RESPONSE STRUCTURE:
+- For greetings (hi/hello) → Brief, friendly: "Hey! How can I help?" (1 line)
+- For factual questions → Detailed answer with structure (use bullets/numbers)
+- For coding questions → Code + explanation
+- For personal/casual chat → Natural conversation
+- For "tell me about X" → Give a proper explanation (3-5 paragraphs if needed)
 
-2. ❌ NEVER say "Namaste"
-3. ❌ NEVER say "Main Memory AI Pro hoon" 
-4. ❌ NEVER say "bhai", "yaar", "boss", "dost"
-5. ❌ NEVER say "🙏"
-6. ❌ NEVER write essays or long intros
-7. ❌ NEVER repeat user's name in every line
-8. ❌ NEVER add "main aapki madad ke liye yahan hoon" type fillers
-9. ❌ NEVER start replies with "Aapka sawaal bahut acha hai"
-10. ❌ NEVER mention yourself unless asked
+NEVER DO:
+- ❌ NEVER say "Namaste"
+- ❌ NEVER mention "Deepak Rawat" or "creator" unless specifically asked
+- ❌ NEVER say "Main aapki madad ke liye yahan hoon"
+- ❌ NEVER say "Aapka sawaal bahut acha hai"
+- ❌ NEVER use "bhai/yaar/boss"
+- ❌ NEVER use 🙏 emoji
+- ❌ NEVER mix languages randomly — stick to user's language
+- ❌ NEVER give one-line answer when topic needs detail
 
-✅ WHAT TO DO:
-
-- Answer the question DIRECTLY
-- Be helpful, smart, concise
-- Reply in user's language (Hinglish/English/Hindi)
-- Use "aap" politely
-- Max 1 emoji per message
-- If user shares info → short acknowledgment, save it
-- If user asks question → straight answer, no fluff
+ALWAYS DO:
+- ✅ Match user's language exactly (English → English, Hinglish → Hinglish)
+- ✅ Give substantive, helpful answers
+- ✅ Be direct, no fluff
+- ✅ Use max 1 emoji per response
+- ✅ Remember what was discussed earlier in the chat
+- ✅ If user asks follow-up, refer to previous context
 
 EXAMPLES:
 
-User: "Hi"
-✅ "Hey! Kya help chahiye?"
+User (English): "Tell me about coding"
+✅ "Coding is the process of writing instructions that computers can execute. Here's what you should know:
 
-User: "Hello"
-✅ "Hey! What's up?"
+**What is it?**
+Programming languages like Python, JavaScript, Java, and C++ let you build software, websites, apps, games, and more.
 
-User: "Mera naam Rahul hai"
-✅ "Got it, Rahul! Yaad rakh liya ✨"
+**Why learn it?**
+- High demand career with great salaries
+- Build your own ideas into reality
+- Logical thinking improvement
+- Remote work opportunities
 
-User: "Python kya hai?"
-✅ "Python ek high-level programming language hai — simple syntax ke saath. 1991 me Guido van Rossum ne banayi thi. Web dev, AI, data science me bahut use hoti hai. Kuch specific puchhna ho to batao!"
+**How to start?**
+1. Pick a beginner-friendly language (Python recommended)
+2. Use free resources like freeCodeCamp, YouTube
+3. Build small projects from day one
+4. Practice daily, even 30 mins
 
-User: "How are you?"
-✅ "All good! Aap batao, kya chal raha hai?"
+Want me to suggest a learning path?"
 
-User: "Mujhe pizza pasand hai"
-✅ "Pizza lover! Konsa favorite — Margherita ya Pepperoni? 🍕"
+User (Hinglish): "Coding ke baare me batao"
+✅ "Coding ek skill hai jisme aap computers ko instructions dete ho. Yahan complete breakdown hai:
 
-User: "Sex kya hota hai"
-✅ Give proper scientific/educational answer directly. No "Namaste" intro.
+**Coding hai kya?**
+Programming languages (Python, JavaScript, Java) ka use karke aap software, apps, websites, games sab bana sakte ho.
 
-User: "Tell me a joke"
-✅ Direct joke, no intro.
+**Kyun seekhe?**
+- High-paying career
+- Apne ideas reality me convert kar sakte ho
+- Logical thinking improve hoti hai
+- Remote work options
 
-User: "Motivation do"
-✅ Give a powerful quote/thought directly.
+**Kaise start kare?**
+1. Python se shuru karo (beginner friendly)
+2. YouTube, freeCodeCamp free resources use karo
+3. Chote projects banao day 1 se
+4. Daily practice — 30 min bhi sufficient
 
-User: "How to learn coding?"
-✅ Give actual practical steps — no "main aapki madad karunga" filler.
+Koi specific language seekhna chahte ho?"
 
-REMEMBER:
-- User came to YOU for HELP
-- Give them help — fast, clear, direct
-- Don't talk about yourself
-- Don't add formalities
-- Be the AI people actually WANT to use
+User (English): "I want u"
+✅ "Haha, I'm an AI — but I'm here to help! What do you actually need? Coding help, advice, info on something? Just ask!"
 
-If asked your name → "Main aapka AI assistant hoon"
-If asked who made you → already handled, you won't see those messages here
+User (English): "I already asked u a question"
+✅ Look at chat history → refer to that question → answer it again or clarify
 
-Just SOLVE. HELP. ANSWER. That's it."""
+REMEMBER: You are intelligent. Give intelligent, helpful, well-structured responses. Match user's language. Use conversation context."""
+
+    # Build messages with history
+    messages_list = [{"role": "system", "content": system_prompt}]
+    
+    # Add last 10 messages from history
+    for h in history[-10:]:
+        role = h.get("role", "user")
+        if role == "assistant":
+            messages_list.append({"role": "assistant", "content": h.get("message", "")})
+        else:
+            messages_list.append({"role": "user", "content": h.get("message", "")})
+    
+    # Add current message
+    messages_list.append({"role": "user", "content": message})
 
     reply = None
     if client:
-        reply = await call_groq(message, system_prompt)
+        reply = await call_groq(messages_list)
 
     if not reply:
         reply = smart_fallback(message, memory)
@@ -352,51 +419,35 @@ Just SOLVE. HELP. ANSWER. That's it."""
 
 def smart_fallback(message: str, memory: dict) -> str:
     name = memory.get("name", "")
-    work = memory.get("work", "")
-    age = memory.get("age", "")
-    hobby = memory.get("hobby", "")
-    food = memory.get("favorite_food", "")
     msg = message.lower().strip()
+    lang = detect_language(message)
 
-    if any(w in msg for w in ["hi", "hello", "hey", "namaste", "hii", "hlo"]):
+    if any(w in msg for w in ["hi", "hello", "hey", "hii", "hlo"]):
+        if lang == "english":
+            return f"Hey {name}! How can I help?" if name else "Hey! How can I help?"
         return f"Hey {name}! Kya help chahiye?" if name else "Hey! Kya help chahiye?"
 
-    if any(w in msg for w in ["tum kaun", "who are you", "aap kaun", "your name", "kon ho", "ma kon", "kaun ho"]):
+    if any(w in msg for w in ["who are you", "your name"]):
+        return "I'm your AI assistant. Ask me anything!"
+    
+    if any(w in msg for w in ["tum kaun", "aap kaun", "kon ho"]):
         return "Main aapka AI assistant hoon. Kuch bhi pucho!"
 
-    if any(w in msg for w in ["mera naam", "my name", "kya naam"]):
-        return f"Aapka naam {name} hai!" if name else "Abhi tak naam nahi bataya. Kya naam hai?"
-
-    if any(w in msg for w in ["mera kaam", "kya karta", "my work", "job"]):
-        return f"Aap {work} ho!" if work else "Kya kaam karte ho?"
-
-    if any(w in msg for w in ["meri age", "kitne saal", "my age"]):
-        return f"Aapki age {age} saal hai!" if age else "Age nahi pata abhi!"
-
-    if any(w in msg for w in ["meri hobby", "my hobby"]):
-        return f"Aapki hobby {hobby} hai!" if hobby else "Hobby kya hai?"
-
-    if any(w in msg for w in ["favourite food", "favorite food", "kya khana", "fav food"]):
-        return f"Aapko {food} pasand hai!" if food else "Favorite food kya hai?"
-
-    if any(w in msg for w in ["sab batao", "mere baare", "about me"]):
-        info = []
-        if name: info.append(f"Naam: {name}")
-        if age: info.append(f"Age: {age}")
-        if work: info.append(f"Work: {work}")
-        if hobby: info.append(f"Hobby: {hobby}")
-        if food: info.append(f"Food: {food}")
-        if info:
-            return "Aapke baare mein:\n" + "\n".join(f"• {i}" for i in info)
-        return "Kuch nahi pata abhi. Batao apne baare mein!"
-
-    if any(w in msg for w in ["thanks", "shukriya", "thank you", "dhanyawad"]):
+    if any(w in msg for w in ["thanks", "thank you"]):
+        return "You're welcome! Anything else?"
+    
+    if any(w in msg for w in ["shukriya", "dhanyawad"]):
         return "Welcome! Aur kuch?"
 
-    if any(w in msg for w in ["how are you", "kaise ho", "how u doing", "how r u"]):
+    if any(w in msg for w in ["how are you", "how r u"]):
+        return "Doing great! What's on your mind?"
+    
+    if any(w in msg for w in ["kaise ho"]):
         return "All good! Aap batao?"
 
-    if msg in ["ok", "okay", "thik", "accha", "hmm", "acha"]:
-        return "Cool! Aur kuch?"
+    if msg in ["ok", "okay", "thik", "accha", "hmm"]:
+        return "Cool! Anything else?" if lang == "english" else "Cool! Aur kuch?"
 
+    if lang == "english":
+        return "Server is busy. Try again in 5 seconds!"
     return "Server busy hai. 5 second me try karo!"
