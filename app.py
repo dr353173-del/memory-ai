@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from datetime import datetime
 import asyncio
 import json
@@ -18,6 +20,24 @@ from memory import (
 
 app = Flask(__name__)
 CORS(app)
+
+# 🛡️ Rate limiting - abuse se bachao
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["500 per day", "100 per hour"],
+    storage_uri="memory://",
+)
+
+
+@app.after_request
+def add_security_headers(response):
+    """Security headers add karo har response mein"""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    return response
 
 
 @app.route("/", methods=["GET", "HEAD"])
@@ -38,6 +58,7 @@ def health():
 
 
 @app.route("/api/chat", methods=["POST"])
+@limiter.limit("30 per hour;5 per minute")
 def chat():
     try:
         data = request.json
@@ -47,6 +68,10 @@ def chat():
 
         if not message:
             return jsonify({"error": "Message empty hai"}), 400
+
+        # 🛡️ Length limit - bahut bada message reject karo
+        if len(message) > 4000:
+            return jsonify({"error": "Message bahut bada hai (max 4000 characters)"}), 400
 
         if not chat_id:
             chat_id = f"chat_{uuid.uuid4().hex[:12]}"
@@ -240,6 +265,43 @@ def api_get_stats():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/account/delete", methods=["POST"])
+def api_delete_account():
+    """User ka saara data permanently delete karo"""
+    try:
+        data = request.json
+        user_id = data.get("user_id", "")
+        confirm = data.get("confirm", False)
+
+        if not user_id:
+            return jsonify({"error": "user_id zaroori hai"}), 400
+
+        if not confirm:
+            return jsonify({"error": "Confirmation chahiye. confirm: true bhejo"}), 400
+
+        # Saara data delete karo
+        clear_all_memory(user_id)
+        clear_user_chats(user_id)
+
+        return jsonify({
+            "status": "deleted",
+            "message": "Aapka saara data delete kar diya gaya hai"
+        })
+    except Exception as e:
+        print(f"❌ Account delete error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/privacy")
+def privacy_policy():
+    return send_from_directory(".", "privacy.html")
+
+
+@app.route("/terms")
+def terms_of_service():
+    return send_from_directory(".", "terms.html")
+
+
 @app.route("/manifest.json")
 def manifest():
     return send_from_directory(".", "manifest.json")
@@ -292,9 +354,20 @@ def method_not_allowed(e):
     return jsonify({"error": "Method allowed nahi hai"}), 405
 
 
+@app.errorhandler(429)
+def rate_limit_exceeded(e):
+    return jsonify({
+        "error": "Bahut zyada requests! Thodi der ruk ke try karein.",
+        "retry_after": "1 minute"
+    }), 429
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"🚀 Memory AI Pro starting on port {port}")
     print(f"💾 Database: SQLite (memory.db)")
     print(f"🤖 AI: Groq")
+    print(f"🛡️ Rate Limiting: Active")
+    print(f"📜 Privacy Policy: /privacy")
+    print(f"📋 Terms: /terms")
     app.run(host="0.0.0.0", port=port, debug=False)
