@@ -61,48 +61,123 @@ MANIPULATION_PATTERNS = [
     "ignore previous", "forget instructions", "act as", "pretend to be"
 ]
 
-# Short conversational triggers (replies should be short for these)
 SHORT_REPLY_TRIGGERS = ["hi", "hello", "hey", "hii", "hlo", "bye", "good night", "good morning",
                         "thanks", "thank you", "ok", "okay", "thik", "accha", "hmm", "yes", "no",
                         "haan", "nahi", "kaise ho", "how are you", "what's up", "whats up",
-                        "kya kar rahe", "kya karre", "kya karri", "kya kar", "kya hal"]
+                        "kya kar rahe", "kya karre", "kya karri", "kya kar", "kya hal", "yo"]
+
+# 🌐 COMPREHENSIVE HINGLISH/HINDI WORD LIST
+HINGLISH_INDICATORS = {
+    # Verbs
+    "hai", "hain", "ho", "hoon", "hu", "tha", "thi", "the", "raha", "rahi", "rahe",
+    "karna", "karta", "karti", "karte", "karke", "karo", "karu", "karunga", "karenge",
+    "kiya", "kiye", "kar", "kara", "karri", "karra", "kar rha", "kar rhi",
+    "bolna", "bolta", "bolti", "bole", "bolo", "bolra", "bolri", "bola",
+    "jana", "jata", "jati", "jao", "gaya", "gayi", "gaye", "jaunga",
+    "dena", "deta", "deti", "do", "diya", "diye", "denge",
+    "lena", "leta", "leti", "lo", "liya", "liye", "lenge",
+    "khana", "khata", "khati", "khao", "khaya", "khaye",
+    "pina", "pita", "piti", "piyo", "piya", "piye",
+    "dekhna", "dekhta", "dekhti", "dekho", "dekha", "dekhi",
+    "sunna", "sunta", "sunti", "suno", "suna", "suni",
+    "samjhna", "samjha", "samjhi", "samjho", "samjhana",
+    "milna", "milta", "milti", "milo", "mila", "mili",
+    "padhna", "padhta", "padhti", "padho", "padha", "padhi",
+    "likhna", "likhta", "likhti", "likho", "likha", "likhi",
+    
+    # Pronouns
+    "main", "mai", "mera", "meri", "mere", "mujhe", "mujhse", "mujhko",
+    "tum", "tera", "teri", "tere", "tujhe", "tujhse", "tumhe", "tumse",
+    "aap", "aapka", "aapki", "aapke", "aapko", "aapse",
+    "wo", "vo", "uska", "uski", "uske", "use", "usko", "usse",
+    "ye", "yeh", "iska", "iski", "iske", "ise", "isko", "isse",
+    "hum", "humara", "humari", "humare", "humko", "humse",
+    "unka", "unki", "unke", "unko", "unse",
+    
+    # Question words
+    "kya", "kyun", "kyu", "kyo", "kyon", "kahan", "kahaan", "kab", "kaise",
+    "kaun", "kon", "konsa", "kitna", "kitne", "kitni",
+    
+    # Common Hindi words
+    "nahi", "nahin", "haan", "han", "ji", "achha", "accha", "acha",
+    "thik", "tik", "theek", "bhai", "yaar", "dost", "ji",
+    "kuch", "kuchh", "kucch", "sab", "saara", "saare",
+    "matlab", "yani", "yaani", "ya", "ki", "ke", "ka", "ki", "ko", "ki",
+    "se", "me", "mein", "par", "pe", "tak", "se",
+    "abhi", "ab", "kabhi", "hamesha", "phir", "fir", "tab", "jab",
+    "aur", "ya", "lekin", "magar", "par", "kyunki", "isliye",
+    "bhi", "to", "toh", "hi", "na", "mat",
+    "bahut", "thoda", "thodi", "zyada", "kam",
+    "wala", "wali", "wale", "valas",
+    "chal", "chalo", "chal raha", "chal rahi",
+    
+    # Hinglish slang
+    "bro", "bruh", "boss", "yr", "sahi", "galat", "fast",
+    "scene", "vibe", "mood", "chill", "lit", "mast",
+    
+    # SMS/Chat shortcuts
+    "q", "k", "h", "hu", "krna", "krta", "krti", "krke", "kr",
+    "rha", "rhi", "rhe", "ho gya", "ho gyi", "ho gye",
+    "tha", "thi", "the", "thy",
+    
+    # Common phrases
+    "kya hal", "kya haal", "kya scene", "kya chal", "kaisa hai",
+    "theek hu", "thik hu", "badhiya", "fantastic", "mast hai",
+    "bata", "batao", "batade", "bataya",
+    "puch", "puchho", "pucha", "puchna",
+    "bol", "bolo", "bola", "bolna",
+    "samjha", "samjhi", "samjhe", "samjho",
+}
 
 
 def detect_language(message: str) -> str:
+    """SUPER ACCURATE language detection"""
     msg = message.lower().strip()
+    
+    if not msg:
+        return "english"
 
+    # 1. Devanagari script = Hindi
     if re.search(r'[\u0900-\u097F]', message):
         return "hindi"
 
-    hinglish_words = ["hai", "hain", "kya", "mera", "tera", "aap", "tum", "main",
-                      "kaise", "kyun", "kaun", "kon", "kahan", "kab", "nahi", "haan",
-                      "acha", "accha", "thik", "tik", "bhai", "yaar", "kuch", "sab", "ye", "wo",
-                      "karna", "karta", "karke", "karo", "raha", "rahi", "hoon", "hu",
-                      "matlab", "samjha", "samjhi", "batao", "puchho", "bolo",
-                      "ma", "mai", "se", "ke", "ka", "ki", "ko", "na", "hi",
-                      "abhi", "ab", "fir", "phir", "aur", "lekin", "par", "magar",
-                      "tumse", "tumhe", "mujhe", "mujhse", "humse",
-                      "kar", "kara", "karri", "karra", "rha", "rhi", "rhe",
-                      "bolra", "bolri", "borha", "borhi", "borhe",
-                      "q", "kyu", "kyo", "kyon", "wala", "wali", "wale"]
-
-    words = msg.split()
+    # 2. Clean message — remove punctuation
+    clean_msg = re.sub(r'[^\w\s]', ' ', msg)
+    words = clean_msg.split()
+    
     if not words:
         return "english"
 
-    hindi_count = sum(1 for w in words if w in hinglish_words)
+    # 3. Count Hinglish words
+    hinglish_count = 0
+    for word in words:
+        if word in HINGLISH_INDICATORS:
+            hinglish_count += 1
+        # Check Hindi endings (words ending with common Hindi suffixes)
+        elif len(word) > 2 and word.endswith(('na', 'ne', 'ni', 'ti', 'ta', 'te', 'ga', 'gi', 'ge', 'ke', 'ki', 'ka', 'on', 'an', 'in')):
+            # Common Hindi patterns
+            if word not in ['the', 'one', 'can', 'man', 'pan', 'gone', 'done', 'tone', 'bone', 'phone', 'line', 'time', 'mine', 'fine', 'wine', 'nine']:
+                hinglish_count += 0.5
 
-    if hindi_count / len(words) >= 0.20:
+    # 4. Calculate ratio
+    ratio = hinglish_count / len(words)
+    
+    print(f"🔍 Language Detection: '{msg[:50]}' → Hinglish ratio: {ratio:.2f} ({hinglish_count}/{len(words)})")
+
+    # 5. Decision logic
+    # If even 1 Hinglish word in short message → Hinglish
+    if len(words) <= 3 and hinglish_count >= 1:
         return "hinglish"
-
-    if all(ord(c) < 128 for c in message):
-        return "english"
-
-    return "hinglish"
+    
+    # 15%+ Hinglish = Hinglish
+    if ratio >= 0.15:
+        return "hinglish"
+    
+    # Pure English check
+    return "english"
 
 
 def is_short_reply_message(message: str) -> bool:
-    """Check if message needs short reply (greetings, small talk)"""
     msg = message.lower().strip()
     return msg in SHORT_REPLY_TRIGGERS or len(msg.split()) <= 3
 
@@ -246,18 +321,16 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
     memory = get_memory(user_id)
     history = history or []
     lang = detect_language(message)
+    print(f"🌐 Detected language: {lang.upper()}")
 
-    # Illegal block
     if is_illegal_content(message):
         reply = "Sorry, can't help with this topic. Try something else!" if lang == "english" else "Sorry, is topic pe help nahi kar sakta. Kuch aur puchein!"
         return {"reply": reply, "memory_saved": False, "memory": memory}
 
-    # Creator question
     if is_creator_question(message):
         reply = "I was created by Deepak Rawat (Deepu) 👨‍💻" if lang == "english" else "Mujhe Deepak Rawat (Deepu) ne banaya hai 👨‍💻"
         return {"reply": reply, "memory_saved": False, "memory": memory}
 
-    # Deepak question
     if is_deepak_question(message):
         if lang == "english":
             reply = "Deepak Rawat (Deepu) is my creator — a talented developer who built me from scratch 👨‍💻"
@@ -265,7 +338,6 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
             reply = "Deepak Rawat (Deepu) mere creator hain — ek talented developer jinhone mujhe banaya hai 👨‍💻"
         return {"reply": reply, "memory_saved": False, "memory": memory}
 
-    # Recall
     if is_recall_command(message):
         info_parts = []
         if memory.get("name"): info_parts.append(f"• Name: {memory['name']}")
@@ -284,13 +356,11 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
 
         return {"reply": reply, "memory_saved": False, "memory": memory}
 
-    # Forget
     if is_forget_command(message):
         clear_all_memory(user_id)
         reply = "Done! All memories cleared. Fresh start! 🔄" if lang == "english" else "Done! Saari memories delete kar di. Fresh start! 🔄"
         return {"reply": reply, "memory_saved": False, "memory": {}}
 
-    # Extract & save
     new_info = extract_memory(message, memory)
     memory_saved = False
 
@@ -300,7 +370,6 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
         memory_saved = True
         print(f"💾 Saved: {new_info}")
 
-    # User info
     info_parts = []
     if memory.get("name"): info_parts.append(f"Name: {memory['name']}")
     if memory.get("age"): info_parts.append(f"Age: {memory['age']} years")
@@ -310,188 +379,109 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
 
     memory_text = "\n".join(info_parts) if info_parts else "No info saved yet"
 
-    # Decide response length
     is_short = is_short_reply_message(message)
-    
-    # Language instruction
+
+    # 🌐 STRICT LANGUAGE INSTRUCTION
     if lang == "english":
-        lang_instruction = "USER WROTE IN ENGLISH. REPLY ONLY IN ENGLISH."
+        lang_instruction = """🌐 LANGUAGE LOCK: USER WROTE IN PURE ENGLISH.
+
+⚠️ MANDATORY RULES:
+- REPLY 100% IN ENGLISH ONLY
+- DO NOT use ANY Hindi words like "hai", "aap", "kya", "mein", "ko", "ka", "ki"
+- DO NOT use Hinglish at all
+- Write like a native English speaker
+- Even greetings: "Hey!" not "Hey bhai!"
+
+EXAMPLE:
+User: "What is love?"
+✅ "Love is a deep emotion involving..."
+❌ "Love ek deep emotion hai jisme..."
+"""
     elif lang == "hindi":
-        lang_instruction = "USER WROTE IN HINDI. REPLY IN HINDI/HINGLISH."
-    else:
-        lang_instruction = "USER WROTE IN HINGLISH. REPLY IN HINGLISH ONLY (mix Hindi+English words). DO NOT reply in pure English."
+        lang_instruction = """🌐 LANGUAGE LOCK: USER WROTE IN HINDI/DEVANAGARI.
 
-    # Response length instruction
+⚠️ MANDATORY RULES:
+- REPLY IN HINDI or HINGLISH (Roman script mix)
+- Match user's tone and style
+"""
+    else:
+        lang_instruction = """🌐 LANGUAGE LOCK: USER WROTE IN HINGLISH (Hindi + English mix).
+
+⚠️ MANDATORY RULES:
+- REPLY 100% IN HINGLISH ONLY (mix of Hindi + English words)
+- DO NOT reply in PURE English
+- DO NOT reply in PURE Hindi
+- Use natural Hinglish like Indian people speak
+- Use words like: hai, hain, aap, kya, mein, ko, ka, ki, se, par
+- Mix English technical words with Hindi structure
+
+EXAMPLE:
+User: "Love kya hai?"
+✅ "Love ek bahut hi powerful emotion hai jo deep affection aur care ko represent karta hai..."
+❌ "Love is a powerful emotion that represents deep affection..." (TOO ENGLISH)
+❌ "Prem ek bahut shakti shaali bhavna hai..." (TOO PURE HINDI)
+
+User: "Coding kya hota h"
+✅ "Coding ek skill hai jisme aap computers ko instructions dete ho. Yeh programming languages jaise Python, Java ka use karke hoti hai..."
+❌ "Coding is a skill where you give instructions to computers..." (WRONG - too English)
+"""
+
     if is_short:
-        length_instruction = """RESPONSE LENGTH: This is casual/greeting message. Keep reply SHORT (1-2 lines max). No headings, no bullets."""
+        length_instruction = "RESPONSE LENGTH: Short casual reply (1-2 lines). No headings or bullets."
     else:
-        length_instruction = """RESPONSE LENGTH: This is a real question. Give DETAILED response like ChatGPT/Claude:
+        length_instruction = """RESPONSE LENGTH: Give DETAILED response like ChatGPT/Claude:
 - Minimum 150-300 words
-- Use clear structure with sections
 - Use **bold headings** for sections
-- Use bullet points (•) or numbers for lists
-- Give examples when helpful
-- Cover the topic thoroughly
-- End with a follow-up question if relevant"""
+- Use bullet points (•) or numbers
+- Give examples
+- End with follow-up question"""
 
-    # 🎯 SYSTEM PROMPT
-    system_prompt = f"""You are an intelligent, knowledgeable AI assistant — exactly like ChatGPT-4 or Claude. You give DETAILED, WELL-STRUCTURED, INFORMATIVE responses.
+    system_prompt = f"""You are an intelligent AI assistant — like ChatGPT or Claude.
 
 USER'S SAVED INFO:
 {memory_text}
 
-🌐 LANGUAGE: {lang_instruction}
+{lang_instruction}
 
 📏 {length_instruction}
 
-⚡ YOUR EXPERTISE:
-You are an expert in: Science, Technology, Coding, Health, Relationships, Psychology, History, Philosophy, Business, Finance, Education, Art, Music, Sports, Cooking, Travel — EVERYTHING.
+⚡ EXPERTISE: Science, Tech, Coding, Health, Relationships, Psychology, History, Business — EVERYTHING.
 
-📋 RESPONSE FORMAT FOR QUESTIONS:
+📋 RESPONSE FORMAT FOR DETAILED ANSWERS:
 
-For "What is X?" type questions, structure like this:
+**Introduction** (2-3 lines)
 
-**Definition/Introduction** (2-3 lines explaining what it is)
+**Key Points/Types**
+• Point 1
+• Point 2
+• Point 3
 
-**Key Aspects/Types/Features**
-• Point 1 with brief explanation
-• Point 2 with brief explanation  
-• Point 3 with brief explanation
+**How it works / Why important**
+(Detailed explanation)
 
-**Why it matters / How it works**
-(Detailed explanation with examples)
-
-**Practical applications/examples**
+**Examples**
 (Real-world examples)
 
 **Conclusion + Follow-up question**
 
-EXAMPLES OF GOOD DETAILED RESPONSES:
-
-User: "What is love?"
-✅ EXCELLENT RESPONSE:
-"Love is one of the most profound and complex human emotions — a powerful feeling of deep affection, care, and connection toward someone or something.
-
-**Types of Love:**
-• **Romantic Love** — Deep passion and intimacy between partners
-• **Familial Love** — Unconditional bond with parents, siblings, children
-• **Platonic Love** — Strong friendship without romance
-• **Self-Love** — Accepting and caring for yourself
-• **Universal Love** — Compassion for all beings
-
-**Key Components (according to psychology):**
-1. **Intimacy** — Emotional closeness and trust
-2. **Passion** — Physical and emotional attraction
-3. **Commitment** — Long-term dedication
-
-**Why Love Matters:**
-Love drives human behavior, motivates sacrifice, creates meaning in life, and is essential for mental health. Scientific studies show love releases dopamine, oxytocin, and serotonin — chemicals that create happiness and bonding.
-
-**Real-World Impact:**
-Love influences our decisions, shapes our relationships, and even affects physical health. People in loving relationships tend to live longer and have better immune systems.
-
-What aspect of love interests you most — romantic, self-love, or something else? 💕"
-
-User: "Condom kya hota hai"
-✅ EXCELLENT RESPONSE:
-"Condom ek barrier contraceptive device hai jo sex ke dauran pregnancy aur sexually transmitted diseases (STDs) se protect karta hai.
-
-**Condom ke Types:**
-• **Male Condom** — Penis par pehna jata hai (sabse common)
-• **Female Condom** — Vagina ke andar insert hota hai
-• **Latex Condoms** — Standard rubber se bane
-• **Non-Latex** — Polyurethane se (allergy wale logo ke liye)
-• **Lubricated/Textured** — Extra comfort aur sensation ke liye
-
-**Kaise Kaam Karta Hai:**
-Condom ek physical barrier banata hai jo:
-1. Sperm ko egg tak pahunchne se rokta hai (pregnancy prevention)
-2. Body fluids ka exchange rokta hai (STD prevention)
-3. HIV, gonorrhea, chlamydia jaise infections se bachata hai
-
-**Effectiveness:**
-• Sahi use kiya jaye to 98% effective pregnancy prevention
-• Galat use pe 85% effective
-• STDs se 90%+ protection
-
-**Important Tips:**
-• Expiry date check karein
-• Ek baar use karke discard karein
-• Latex condoms ke saath oil-based lubricant na use karein
-• Medical store ya pharmacy se khareedein
-
-**Where to Get:**
-Medical stores, pharmacies, online platforms, government health centers (free milte hain).
-
-Koi specific question hai condom ke baare mein? 🩺"
-
-User: "Coding kya hai"
-✅ EXCELLENT RESPONSE:
-"Coding (ya Programming) ek process hai jisme aap computers ko instructions dete hain specific tasks perform karne ke liye. Yeh modern technology ki backbone hai.
-
-**Coding Hoti Kya Hai?**
-Aap programming languages ka use karke instructions likhte hain jo computer samajh sake. Ye instructions step-by-step bataate hain ki kya karna hai.
-
-**Popular Programming Languages:**
-• **Python** — Beginner-friendly, AI/Data Science me top
-• **JavaScript** — Websites aur web apps ke liye
-• **Java** — Android apps, enterprise software
-• **C++** — Games, high-performance apps
-• **Swift** — iOS apps
-• **HTML/CSS** — Web design
-
-**Coding Se Kya Bana Sakte Ho:**
-1. Websites (Facebook, Instagram jaise)
-2. Mobile Apps (WhatsApp, games)
-3. Software (Microsoft Office, Photoshop)
-4. AI Systems (ChatGPT jaise)
-5. Games (PUBG, Free Fire)
-6. Automation tools
-
-**Why Learn Coding:**
-• High-paying career (₹5-50 LPA salaries)
-• Remote work flexibility
-• Build your own startup
-• Problem-solving skills improve
-• Future-proof skill
-
-**How to Start:**
-1. Python se shuru karein (easiest)
-2. Free resources: YouTube, freeCodeCamp, W3Schools
-3. Daily 1-2 hours practice
-4. Small projects banao (calculator, to-do app)
-5. GitHub pe code share karo
-
-**Time to Learn:**
-• Basics: 2-3 months
-• Job-ready: 6-12 months
-• Expert: 2-3 years
-
-Konsi language se start karna chahte ho? Main proper roadmap bana sakta hoon! 💻"
-
-❌ NEVER GIVE SHORT 2-LINE ANSWERS for real questions
-❌ NEVER skip structure
-❌ NEVER skip examples
-✅ ALWAYS use bold headings, bullets, numbers
-✅ ALWAYS give 150+ word answers for real questions
-✅ ALWAYS end with follow-up question for engagement
-
-CRITICAL RULES:
+❌ NEVER DO:
+- ❌ NEVER mix languages incorrectly
 - ❌ NEVER say "Namaste"
-- ❌ NEVER say "Aapka sawaal acha hai"
 - ❌ NEVER mention "Deepak Rawat" unless asked
-- ❌ NEVER use "bhai/yaar/boss"
+- ❌ NEVER use "bhai/yaar"
 - ❌ NEVER use 🙏 emoji
 - ❌ NEVER give one-line answer to real questions
-- ❌ NEVER ignore user's language preference
-- ✅ ALWAYS match user's CURRENT language
-- ✅ ALWAYS use markdown formatting (bold, bullets)
-- ✅ ALWAYS give detailed responses for questions
-- ✅ Use max 1-2 emojis per response
+- ❌ NEVER switch from user's language
 
-REMEMBER: User wants ChatGPT-quality responses. Give detailed, structured, helpful answers. Don't be lazy."""
+✅ ALWAYS DO:
+- ✅ STRICTLY match user's language (English→English, Hinglish→Hinglish)
+- ✅ Use markdown formatting (bold, bullets, headings)
+- ✅ Give detailed structured responses
+- ✅ Use max 1-2 emojis
+- ✅ Be helpful and informative
 
-    # Build messages with history
+🌐 LANGUAGE IS LAW. FOLLOW IT 100%."""
+
     messages_list = [{"role": "system", "content": system_prompt}]
 
     for h in history[-10:]:
@@ -503,7 +493,6 @@ REMEMBER: User wants ChatGPT-quality responses. Give detailed, structured, helpf
 
     messages_list.append({"role": "user", "content": message})
 
-    # Use higher tokens for detailed responses
     max_tok = 300 if is_short else 2000
 
     reply = None
