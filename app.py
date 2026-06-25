@@ -6,7 +6,6 @@ import json
 import os
 import uuid
 
-# Import our modules
 from chat import process_message
 from memory import (
     get_memory, save_memory, delete_memory, clear_all_memory,
@@ -20,11 +19,9 @@ from memory import (
 app = Flask(__name__)
 CORS(app)
 
-# ============ MAIN ROUTES ============
 
 @app.route("/", methods=["GET", "HEAD"])
 def home():
-    """Home page serve karo"""
     if request.method == "HEAD":
         return "", 200
     return send_from_directory(".", "index.html")
@@ -32,56 +29,54 @@ def home():
 
 @app.route("/health", methods=["GET", "HEAD"])
 def health():
-    """Health check endpoint (for UptimeRobot)"""
     return jsonify({
         "status": "ok",
         "service": "Memory AI Pro",
-        "version": "2.0",
+        "version": "2.1",
         "timestamp": datetime.now().isoformat()
     })
 
 
-# ============ CHAT API ============
-
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    """Main chat endpoint"""
     try:
         data = request.json
         user_id = data.get("user_id", "default")
         message = data.get("message", "").strip()
         chat_id = data.get("chat_id", "")
-        
+
         if not message:
             return jsonify({"error": "Message empty hai"}), 400
-        
-        # Create chat session if new
+
         if not chat_id:
             chat_id = f"chat_{uuid.uuid4().hex[:12]}"
             create_chat_session(user_id, chat_id, "New Chat")
-        
+
+        # 🧠 Get conversation history BEFORE saving new message
+        history = get_chat_history(chat_id, limit=20)
+
         # Save user message
         save_chat_message(user_id, chat_id, "user", message)
-        
-        # Process message with AI (async)
+
+        # Process with history context
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(process_message(user_id, message))
+        result = loop.run_until_complete(process_message(user_id, message, history))
         loop.close()
-        
+
         reply = result.get("reply", "Server busy hai")
         memory_saved = result.get("memory_saved", False)
         memory = result.get("memory", {})
-        
+
         # Save AI reply
         save_chat_message(user_id, chat_id, "assistant", reply)
-        
-        # Auto-generate title for new chats
-        history = get_chat_history(chat_id)
-        if len(history) == 2:  # First user msg + first AI reply
+
+        # Auto-generate title
+        full_history = get_chat_history(chat_id)
+        if len(full_history) == 2:
             title = generate_chat_title(message)
             update_chat_title(chat_id, title)
-        
+
         return jsonify({
             "reply": reply,
             "chat_id": chat_id,
@@ -89,7 +84,7 @@ def chat():
             "memory": memory,
             "timestamp": datetime.now().isoformat()
         })
-    
+
     except Exception as e:
         print(f"❌ Chat error: {e}")
         return jsonify({
@@ -99,55 +94,37 @@ def chat():
 
 
 def generate_chat_title(first_message: str) -> str:
-    """First message se chat title generate karo"""
     msg = first_message.strip()
-    
-    # Common greetings
     greetings = ["hi", "hello", "hey", "namaste", "hii", "hlo"]
     if msg.lower() in greetings:
         return "Greeting Chat"
-    
-    # Take first 5 words
     words = msg.split()[:5]
     title = " ".join(words)
-    
-    # Limit length
     if len(title) > 35:
         title = title[:32] + "..."
-    
     return title.capitalize() if title else "New Chat"
 
 
-# ============ MEMORY APIs ============
-
 @app.route("/api/memory/get", methods=["POST"])
 def api_get_memory():
-    """User ki memory laao"""
     try:
         data = request.json
         user_id = data.get("user_id", "default")
         memory = get_memory(user_id)
-        return jsonify({
-            "memory": memory,
-            "count": len(memory),
-            "user_id": user_id
-        })
+        return jsonify({"memory": memory, "count": len(memory), "user_id": user_id})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/memory/update", methods=["POST"])
 def api_update_memory():
-    """Memory field update karo"""
     try:
         data = request.json
         user_id = data.get("user_id", "default")
         field = data.get("field", "")
         value = data.get("value", "")
-        
         if not field:
             return jsonify({"error": "Field zaroori hai"}), 400
-        
         success = update_memory_field(user_id, field, value)
         return jsonify({"status": "updated" if success else "failed"})
     except Exception as e:
@@ -156,12 +133,10 @@ def api_update_memory():
 
 @app.route("/api/memory/delete-field", methods=["POST"])
 def api_delete_memory_field():
-    """Specific memory field delete"""
     try:
         data = request.json
         user_id = data.get("user_id", "default")
         field = data.get("field", "")
-        
         success = delete_memory_field(user_id, field)
         return jsonify({"status": "deleted" if success else "not_found"})
     except Exception as e:
@@ -170,7 +145,6 @@ def api_delete_memory_field():
 
 @app.route("/api/memory/clear", methods=["POST"])
 def api_clear_memory():
-    """User ki saari memory clear"""
     try:
         data = request.json
         user_id = data.get("user_id", "default")
@@ -180,11 +154,8 @@ def api_clear_memory():
         return jsonify({"error": str(e)}), 500
 
 
-# ============ CHAT HISTORY APIs ============
-
 @app.route("/api/chats/list", methods=["POST"])
 def api_get_user_chats():
-    """User ke saare chats laao (sidebar ke liye)"""
     try:
         data = request.json
         user_id = data.get("user_id", "default")
@@ -196,13 +167,11 @@ def api_get_user_chats():
 
 @app.route("/api/chats/history", methods=["POST"])
 def api_get_chat_history():
-    """Specific chat ki history"""
     try:
         data = request.json
         chat_id = data.get("chat_id", "")
         if not chat_id:
             return jsonify({"error": "chat_id zaroori hai"}), 400
-        
         history = get_chat_history(chat_id)
         return jsonify({"history": history, "count": len(history)})
     except Exception as e:
@@ -211,7 +180,6 @@ def api_get_chat_history():
 
 @app.route("/api/chats/delete", methods=["POST"])
 def api_delete_chat():
-    """Specific chat delete"""
     try:
         data = request.json
         chat_id = data.get("chat_id", "")
@@ -223,7 +191,6 @@ def api_delete_chat():
 
 @app.route("/api/chats/clear", methods=["POST"])
 def api_clear_chats():
-    """User ke saare chats delete"""
     try:
         data = request.json
         user_id = data.get("user_id", "default")
@@ -235,46 +202,35 @@ def api_clear_chats():
 
 @app.route("/api/chats/rename", methods=["POST"])
 def api_rename_chat():
-    """Chat ka title rename"""
     try:
         data = request.json
         chat_id = data.get("chat_id", "")
         new_title = data.get("title", "").strip()
-        
         if not chat_id or not new_title:
             return jsonify({"error": "chat_id aur title zaroori hain"}), 400
-        
         success = update_chat_title(chat_id, new_title)
         return jsonify({"status": "renamed" if success else "failed"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-# ============ FEEDBACK API ============
-
 @app.route("/api/feedback", methods=["POST"])
 def api_save_feedback():
-    """User feedback save"""
     try:
         data = request.json
         user_id = data.get("user_id", "default")
         rating = int(data.get("rating", 0))
         message = data.get("message", "").strip()
-        
         if rating < 1 or rating > 5:
             return jsonify({"error": "Rating 1-5 ke beech honi chahiye"}), 400
-        
         success = save_feedback(user_id, rating, message)
         return jsonify({"status": "saved" if success else "failed"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-# ============ USER STATS API ============
-
 @app.route("/api/stats", methods=["POST"])
 def api_get_stats():
-    """User profile stats"""
     try:
         data = request.json
         user_id = data.get("user_id", "default")
@@ -283,8 +239,6 @@ def api_get_stats():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# ============ PWA & STATIC FILES ============
 
 @app.route("/manifest.json")
 def manifest():
@@ -311,23 +265,17 @@ def static_files(filename):
     return send_from_directory("static", filename)
 
 
-# ============ ADMIN APIs (Optional) ============
-
 @app.route("/api/admin/all-memories", methods=["GET"])
 def admin_all_memories():
-    """Admin: Saari memories dekho"""
     memories = get_all_memories()
     return jsonify({"memories": memories, "count": len(memories)})
 
 
 @app.route("/api/admin/all-feedback", methods=["GET"])
 def admin_all_feedback():
-    """Admin: Saara feedback dekho"""
     feedback = get_all_feedback()
     return jsonify({"feedback": feedback, "count": len(feedback)})
 
-
-# ============ ERROR HANDLERS ============
 
 @app.errorhandler(404)
 def not_found(e):
@@ -343,8 +291,6 @@ def server_error(e):
 def method_not_allowed(e):
     return jsonify({"error": "Method allowed nahi hai"}), 405
 
-
-# ============ STARTUP ============
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
