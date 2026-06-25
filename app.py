@@ -1,133 +1,350 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 from datetime import datetime
+import asyncio
 import json
 import os
+import uuid
+
+# Import our modules
+from chat import process_message
+from memory import (
+    get_memory, save_memory, delete_memory, clear_all_memory,
+    delete_memory_field, update_memory_field, get_all_memories,
+    save_chat_message, get_chat_history, get_user_chats,
+    create_chat_session, update_chat_title, delete_chat_session,
+    clear_user_chats, save_feedback, get_all_feedback,
+    get_user_stats, reset_database
+)
 
 app = Flask(__name__)
 CORS(app)
 
-# ---------- IN-MEMORY DATABASE ----------
-memories_db = {}  # user_id -> list of memories
+# ============ MAIN ROUTES ============
 
-# ---------- ROUTES ----------
-
-@app.route("/")
+@app.route("/", methods=["GET", "HEAD"])
 def home():
+    """Home page — HEAD method bhi allow"""
+    if request.method == "HEAD":
+        return "", 200
     return render_template("index.html")
 
 
-@app.route("/api/save", methods=["POST"])
-def save_memory():
-    data = request.json
-    user_id = data.get("user_id", "default")
-    memory_text = data.get("text", "").strip()
-    category = data.get("category", "general")
-
-    if not memory_text:
-        return jsonify({"error": "Empty memory"}), 400
-
-    memory = {
-        "id": datetime.now().strftime("%Y%m%d%H%M%S%f"),
-        "text": memory_text,
-        "category": category,
-        "timestamp": datetime.now().strftime("%d %b %Y, %I:%M %p"),
-        "created_at": datetime.now().isoformat()
-    }
-
-    if user_id not in memories_db:
-        memories_db[user_id] = []
-
-    memories_db[user_id].append(memory)
-
+@app.route("/health", methods=["GET", "HEAD"])
+def health():
+    """Health check endpoint (for UptimeRobot)"""
     return jsonify({
-        "status": "saved",
-        "memory": memory,
-        "total": len(memories_db[user_id])
+        "status": "ok",
+        "service": "Memory AI Pro",
+        "version": "2.0",
+        "timestamp": datetime.now().isoformat()
     })
 
 
-@app.route("/api/recall", methods=["POST"])
-def recall_memory():
-    data = request.json
-    user_id = data.get("user_id", "default")
-    query = data.get("query", "").lower().strip()
+# ============ CHAT API ============
 
-    user_memories = memories_db.get(user_id, [])
-
-    if not query or query in ["all", "sab", "everything", "sab kuch"]:
+@app.route("/api/chat", methods=["POST"])
+def chat():
+    """Main chat endpoint"""
+    try:
+        data = request.json
+        user_id = data.get("user_id", "default")
+        message = data.get("message", "").strip()
+        chat_id = data.get("chat_id", "")
+        
+        if not message:
+            return jsonify({"error": "Message empty hai"}), 400
+        
+        # Create chat session if new
+        if not chat_id:
+            chat_id = f"chat_{uuid.uuid4().hex[:12]}"
+            create_chat_session(user_id, chat_id, "New Chat")
+        
+        # Save user message
+        save_chat_message(user_id, chat_id, "user", message)
+        
+        # Process message with AI (async)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(process_message(user_id, message))
+        loop.close()
+        
+        reply = result.get("reply", "Server busy hai")
+        memory_saved = result.get("memory_saved", False)
+        memory = result.get("memory", {})
+        
+        # Save AI reply
+        save_chat_message(user_id, chat_id, "assistant", reply)
+        
+        # Auto-generate title for new chats
+        history = get_chat_history(chat_id)
+        if len(history) == 2:  # First user msg + first AI reply
+            title = generate_chat_title(message)
+            update_chat_title(chat_id, title)
+        
         return jsonify({
-            "results": user_memories[-20:],
-            "total": len(user_memories)
+            "reply": reply,
+            "chat_id": chat_id,
+            "memory_saved": memory_saved,
+            "memory": memory,
+            "timestamp": datetime.now().isoformat()
         })
-
-    # ---------- SMART SEARCH ----------
-    results = []
-    for mem in user_memories:
-        score = 0
-        text_lower = mem["text"].lower()
-
-        # Exact match
-        if query in text_lower:
-            score += 10
-
-        # Word-by-word match
-        query_words = query.split()
-        for word in query_words:
-            if word in text_lower:
-                score += 3
-
-        # Category match
-        if query in mem.get("category", "").lower():
-            score += 5
-
-        if score > 0:
-            results.append({**mem, "_score": score})
-
-    # Sort by relevance
-    results.sort(key=lambda x: x["_score"], reverse=True)
-
-    # Remove score from output
-    for r in results:
-        r.pop("_score", None)
-
-    return jsonify({
-        "results": results[:10],
-        "total": len(results),
-        "query": query
-    })
+    
+    except Exception as e:
+        print(f"❌ Chat error: {e}")
+        return jsonify({
+            "error": "Kuch problem hui, kripya phir try karein",
+            "details": str(e)
+        }), 500
 
 
-@app.route("/api/delete", methods=["POST"])
-def delete_memory():
-    data = request.json
-    user_id = data.get("user_id", "default")
-    memory_id = data.get("id", "")
+def generate_chat_title(first_message: str) -> str:
+    """First message se chat title generate karo"""
+    # Clean message
+    msg = first_message.strip()
+    
+    # Common greetings
+    greetings = ["hi", "hello", "hey", "namaste", "hii", "hlo"]
+    if msg.lower() in greetings:
+        return "Greeting Chat"
+    
+    # Take first 5 words
+    words = msg.split()[:5]
+    title = " ".join(words)
+    
+    # Limit length
+    if len(title) > 35:
+        title = title[:32] + "..."
+    
+    return title.capitalize() if title else "New Chat"
 
-    user_memories = memories_db.get(user_id, [])
-    memories_db[user_id] = [m for m in user_memories if m["id"] != memory_id]
 
-    return jsonify({"status": "deleted"})
+# ============ MEMORY APIs ============
 
+@app.route("/api/memory/get", methods=["POST"])
+def api_get_memory():
+    """User ki memory laao"""
+    try:
+        data = request.json
+        user_id = data.get("user_id", "default")
+        memory = get_memory(user_id)
+        return jsonify({
+            "memory": memory,
+            "count": len(memory),
+            "user_id": user_id
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/memory/update", methods=["POST"])
+def api_update_memory():
+    """Memory field update karo"""
+    try:
+        data = request.json
+        user_id = data.get("user_id", "default")
+        field = data.get("field", "")
+        value = data.get("value", "")
+        
+        if not field:
+            return jsonify({"error": "Field zaroori hai"}), 400
+        
+        success = update_memory_field(user_id, field, value)
+        return jsonify({"status": "updated" if success else "failed"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/memory/delete-field", methods=["POST"])
+def api_delete_memory_field():
+    """Specific memory field delete"""
+    try:
+        data = request.json
+        user_id = data.get("user_id", "default")
+        field = data.get("field", "")
+        
+        success = delete_memory_field(user_id, field)
+        return jsonify({"status": "deleted" if success else "not_found"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/memory/clear", methods=["POST"])
+def api_clear_memory():
+    """User ki saari memory clear"""
+    try:
+        data = request.json
+        user_id = data.get("user_id", "default")
+        success = clear_all_memory(user_id)
+        return jsonify({"status": "cleared" if success else "failed"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ============ CHAT HISTORY APIs ============
+
+@app.route("/api/chats/list", methods=["POST"])
+def api_get_user_chats():
+    """User ke saare chats laao (sidebar ke liye)"""
+    try:
+        data = request.json
+        user_id = data.get("user_id", "default")
+        chats = get_user_chats(user_id)
+        return jsonify({"chats": chats, "count": len(chats)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chats/history", methods=["POST"])
+def api_get_chat_history():
+    """Specific chat ki history"""
+    try:
+        data = request.json
+        chat_id = data.get("chat_id", "")
+        if not chat_id:
+            return jsonify({"error": "chat_id zaroori hai"}), 400
+        
+        history = get_chat_history(chat_id)
+        return jsonify({"history": history, "count": len(history)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chats/delete", methods=["POST"])
+def api_delete_chat():
+    """Specific chat delete"""
+    try:
+        data = request.json
+        chat_id = data.get("chat_id", "")
+        success = delete_chat_session(chat_id)
+        return jsonify({"status": "deleted" if success else "failed"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chats/clear", methods=["POST"])
+def api_clear_chats():
+    """User ke saare chats delete"""
+    try:
+        data = request.json
+        user_id = data.get("user_id", "default")
+        success = clear_user_chats(user_id)
+        return jsonify({"status": "cleared" if success else "failed"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chats/rename", methods=["POST"])
+def api_rename_chat():
+    """Chat ka title rename"""
+    try:
+        data = request.json
+        chat_id = data.get("chat_id", "")
+        new_title = data.get("title", "").strip()
+        
+        if not chat_id or not new_title:
+            return jsonify({"error": "chat_id aur title zaroori hain"}), 400
+        
+        success = update_chat_title(chat_id, new_title)
+        return jsonify({"status": "renamed" if success else "failed"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ============ FEEDBACK APIs ============
+
+@app.route("/api/feedback", methods=["POST"])
+def api_save_feedback():
+    """User feedback save"""
+    try:
+        data = request.json
+        user_id = data.get("user_id", "default")
+        rating = int(data.get("rating", 0))
+        message = data.get("message", "").strip()
+        
+        if rating < 1 or rating > 5:
+            return jsonify({"error": "Rating 1-5 ke beech honi chahiye"}), 400
+        
+        success = save_feedback(user_id, rating, message)
+        return jsonify({"status": "saved" if success else "failed"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ============ USER STATS API ============
 
 @app.route("/api/stats", methods=["POST"])
-def get_stats():
-    data = request.json
-    user_id = data.get("user_id", "default")
-    user_memories = memories_db.get(user_id, [])
+def api_get_stats():
+    """User profile stats"""
+    try:
+        data = request.json
+        user_id = data.get("user_id", "default")
+        stats = get_user_stats(user_id)
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    categories = {}
-    for mem in user_memories:
-        cat = mem.get("category", "general")
-        categories[cat] = categories.get(cat, 0) + 1
 
-    return jsonify({
-        "total_memories": len(user_memories),
-        "categories": categories,
-        "user_id": user_id
-    })
+# ============ PWA FILES ============
 
+@app.route("/manifest.json")
+def manifest():
+    return send_from_directory(".", "manifest.json")
+
+
+@app.route("/service-worker.js")
+def service_worker():
+    return send_from_directory(".", "service-worker.js")
+
+
+@app.route("/icon-192.png")
+def icon_192():
+    return send_from_directory(".", "icon-192.png")
+
+
+@app.route("/icon-152.png")
+def icon_152():
+    return send_from_directory(".", "icon-152.png")
+
+
+# ============ ADMIN APIs (Optional) ============
+
+@app.route("/api/admin/all-memories", methods=["GET"])
+def admin_all_memories():
+    """Admin: Saari memories dekho (security add karna baad mein)"""
+    memories = get_all_memories()
+    return jsonify({"memories": memories, "count": len(memories)})
+
+
+@app.route("/api/admin/all-feedback", methods=["GET"])
+def admin_all_feedback():
+    """Admin: Saara feedback dekho"""
+    feedback = get_all_feedback()
+    return jsonify({"feedback": feedback, "count": len(feedback)})
+
+
+# ============ ERROR HANDLERS ============
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "Endpoint nahi mila"}), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    return jsonify({"error": "Server error", "details": str(e)}), 500
+
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    return jsonify({"error": "Method allowed nahi hai"}), 405
+
+
+# ============ STARTUP ============
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    print(f"🚀 Memory AI Pro starting on port {port}")
+    print(f"💾 Database: SQLite (memory.db)")
+    print(f"🤖 AI: Groq")
+    app.run(host="0.0.0.0", port=port, debug=False)
