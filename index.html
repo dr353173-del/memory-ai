@@ -51,6 +51,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:14p
 .welcome h2 em{font-style:normal;background:linear-gradient(90deg,#facc15,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .welcome p{color:#9ca3af;margin-top:6px}
 .start-chat-btn{margin-top:20px;padding:14px 32px;border-radius:30px;border:none;background:linear-gradient(90deg,#7c3aed,#2563eb);color:white;cursor:pointer;font-weight:600;font-size:15px;box-shadow:0 4px 20px rgba(124,58,237,0.4)}
+.start-chat-btn:hover{transform:translateY(-2px)}
 .demo-box{margin:20px auto;max-width:500px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);padding:14px 18px;border-radius:12px;text-align:left;font-size:13px;color:#d1d5db}
 .demo-box b{color:#a855f7}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:600px;margin:25px auto 0}
@@ -190,7 +191,7 @@ button.voice{width:38px;height:38px;min-width:38px}
         <button class="danger-btn" onclick="clearAllMemories()">Clear</button>
       </div>
       <div class="setting-row">
-        <div><div class="label">📱 App Version</div><div class="desc">Memory AI Pro v2.0</div></div>
+        <div><div class="label">📱 App Version</div><div class="desc">Memory AI Pro v2.0 by Deepak Rawat</div></div>
       </div>
     </div>
   </div>
@@ -263,21 +264,21 @@ button.voice{width:38px;height:38px;min-width:38px}
       <h2>Hello <em id="welcomeName">there</em>! 👋</h2>
       <p>Main Memory AI Pro hoon — aapki baatein yaad rakhne wala intelligent assistant</p>
       <div class="demo-box">
-        <b>💡 Example:</b> "Mujhe yaad hai ki aap PUBG khelte ho aur Pizza pasand hai!"
+        <b>💡 Memory Demo:</b> Mujhe batayein "Mera naam Deepak hai" — aur phir puchein "Mera naam kya hai?" Main yaad rakhunga!
       </div>
-      <button class="start-chat-btn" onclick="document.getElementById('input').focus()">🚀 Start Chat</button>
+      <button class="start-chat-btn" onclick="startChatNow()">🚀 Start Chat</button>
       <div class="cards">
         <div class="card" onclick="quick('Mera naam kya hai?')">
           <h3>🧠 Test Memory</h3><p>Check karein yaad hai ya nahi</p>
         </div>
         <div class="card" onclick="quick('Mere baare mein kya yaad hai?')">
-          <h3>📋 What You Remember</h3><p>Saari memories dekhein</p>
+          <h3>📋 My Memories</h3><p>Saari memories dekhein</p>
         </div>
         <div class="card" onclick="quick('Ek motivational quote dijiye')">
-          <h3>💡 Motivation</h3><p>Powerful quote</p>
+          <h3>💡 Motivation</h3><p>Powerful quote paayein</p>
         </div>
         <div class="card" onclick="quick('AI ka future kya hai?')">
-          <h3>🚀 AI Future</h3><p>AI trends jaano</p>
+          <h3>🚀 AI Future</h3><p>AI trends jaanein</p>
         </div>
       </div>
     </div>
@@ -292,6 +293,7 @@ button.voice{width:38px;height:38px;min-width:38px}
   <footer>⚡ Powered by Groq AI + Memory Engine 🧠</footer>
 </div>
 
+<!-- FIREBASE AUTH -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -326,17 +328,17 @@ onAuthStateChanged(auth, (user) => {
     if (window.innerWidth > 768) document.getElementById("sidebar").classList.remove("hidden");
     window.currentUser = {
       uid: user.uid,
-      name: user.displayName,
-      email: user.email,
-      photo: user.photoURL
+      name: user.displayName || "User",
+      email: user.email || "",
+      photo: user.photoURL || ""
     };
-    document.getElementById("userName").innerText = user.displayName;
-    document.getElementById("userEmail").innerText = user.email;
-    document.getElementById("userAvatar").src = user.photoURL;
-    document.getElementById("welcomeName").innerText = user.displayName.split(" ")[0];
-    if (document.getElementById("profileAvatar")) document.getElementById("profileAvatar").src = user.photoURL;
-    document.getElementById("profileName").innerText = user.displayName;
-    document.getElementById("profileEmail").innerText = user.email;
+    document.getElementById("userName").innerText = user.displayName || "User";
+    document.getElementById("userEmail").innerText = user.email || "";
+    if (user.photoURL) document.getElementById("userAvatar").src = user.photoURL;
+    document.getElementById("welcomeName").innerText = (user.displayName || "there").split(" ")[0];
+    if (document.getElementById("profileAvatar")) document.getElementById("profileAvatar").src = user.photoURL || "";
+    document.getElementById("profileName").innerText = user.displayName || "User";
+    document.getElementById("profileEmail").innerText = user.email || "";
     initApp();
   } else {
     document.getElementById("loginModal").style.display = "flex";
@@ -345,6 +347,7 @@ onAuthStateChanged(auth, (user) => {
 });
 </script>
 
+<!-- MAIN APP JAVASCRIPT -->
 <script>
 const chatDiv = document.getElementById("chat");
 let voiceEnabled = true;
@@ -357,12 +360,12 @@ function initApp() {
   loadMemoriesQuiet();
 }
 
-function showToast(msg, isError = false) {
+function showToast(msg, isError) {
   const toast = document.getElementById("toast");
   toast.innerText = msg;
   toast.className = isError ? "error" : "";
   toast.style.display = "block";
-  setTimeout(() => toast.style.display = "none", 3000);
+  setTimeout(function() { toast.style.display = "none"; }, 3000);
 }
 
 function openModal(id) {
@@ -378,23 +381,28 @@ function closeModal(id) {
 }
 
 function toggleSidebar() {
-  const sidebar = document.getElementById("sidebar");
-  const overlay = document.getElementById("sidebarOverlay");
+  var sidebar = document.getElementById("sidebar");
+  var overlay = document.getElementById("sidebarOverlay");
   sidebar.classList.toggle("hidden");
   if (window.innerWidth <= 768) {
-    overlay.classList.toggle("active", !sidebar.classList.contains("hidden"));
+    if (sidebar.classList.contains("hidden")) {
+      overlay.classList.remove("active");
+    } else {
+      overlay.classList.add("active");
+    }
   }
+}
+
+function startChatNow() {
+  var welcome = document.getElementById("welcome");
+  if (welcome) welcome.remove();
+  document.getElementById("input").focus();
 }
 
 function newChat() {
   currentChatId = null;
-  chatDiv.innerHTML = `
-    <div class="welcome" id="welcome">
-      <div class="brain">🧠</div>
-      <h2>Hello <em>${window.currentUser?.name.split(" ")[0] || "there"}</em>! 👋</h2>
-      <p>Naya chat shuru — kuch bhi puchein!</p>
-      <button class="start-chat-btn" onclick="document.getElementById('input').focus()">🚀 Start Chat</button>
-    </div>`;
+  var userName = (window.currentUser && window.currentUser.name) ? window.currentUser.name.split(" ")[0] : "there";
+  chatDiv.innerHTML = '<div class="welcome" id="welcome"><div class="brain">🧠</div><h2>Hello <em>' + userName + '</em>! 👋</h2><p>Naya chat shuru — kuch bhi puchein!</p><button class="start-chat-btn" onclick="startChatNow()">🚀 Start Chat</button></div>';
   loadChats();
   if (window.innerWidth <= 768) {
     document.getElementById("sidebar").classList.add("hidden");
@@ -405,47 +413,51 @@ function newChat() {
 async function loadChats() {
   if (!window.currentUser) return;
   try {
-    const res = await fetch("/api/chats/list", {
+    var res = await fetch("/api/chats/list", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ user_id: window.currentUser.uid })
     });
-    const data = await res.json();
-    const list = document.getElementById("chatList");
+    var data = await res.json();
+    var list = document.getElementById("chatList");
     list.innerHTML = "";
     if (!data.chats || data.chats.length === 0) {
       list.innerHTML = '<div style="padding:14px;color:#6b7280;font-size:12px;text-align:center">No chats yet</div>';
       return;
     }
-    data.chats.forEach(c => {
-      const div = document.createElement("div");
+    data.chats.forEach(function(c) {
+      var div = document.createElement("div");
       div.className = "chat-item" + (c.chat_id === currentChatId ? " active" : "");
-      div.innerHTML = `<span class="chat-title">${c.title || 'New Chat'}</span><button class="del-btn" onclick="deleteChat(event,'${c.chat_id}')">🗑</button>`;
-      div.onclick = (e) => { if (!e.target.classList.contains('del-btn')) loadChat(c.chat_id); };
+      div.innerHTML = '<span class="chat-title">' + (c.title || 'New Chat') + '</span><button class="del-btn" onclick="deleteChat(event,\'' + c.chat_id + '\')">🗑</button>';
+      div.onclick = function(e) {
+        if (!e.target.classList.contains('del-btn')) loadChat(c.chat_id);
+      };
       list.appendChild(div);
     });
-  } catch(e) { console.log(e); }
+  } catch(e) { console.log("loadChats error:", e); }
 }
 
 async function loadChat(chatId) {
   currentChatId = chatId;
   try {
-    const res = await fetch("/api/chats/history", {
+    var res = await fetch("/api/chats/history", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ chat_id: chatId })
     });
-    const data = await res.json();
+    var data = await res.json();
     chatDiv.innerHTML = "";
     if (data.history && data.history.length > 0) {
-      data.history.forEach(m => addMessage(m.message, m.role === "user" ? "user" : "bot"));
+      data.history.forEach(function(m) {
+        addMessage(m.message, m.role === "user" ? "user" : "bot");
+      });
     }
     loadChats();
     if (window.innerWidth <= 768) {
       document.getElementById("sidebar").classList.add("hidden");
       document.getElementById("sidebarOverlay").classList.remove("active");
     }
-  } catch(e) { console.log(e); }
+  } catch(e) { console.log("loadChat error:", e); }
 }
 
 async function deleteChat(e, chatId) {
@@ -456,7 +468,7 @@ async function deleteChat(e, chatId) {
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ chat_id: chatId })
   });
-  showToast("Chat deleted ✅");
+  showToast("Chat deleted ✅", false);
   if (chatId === currentChatId) newChat();
   else loadChats();
 }
@@ -468,45 +480,47 @@ async function clearAllChats() {
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ user_id: window.currentUser.uid })
   });
-  showToast("All chats cleared ✅");
-  closeModal('settingsModal');
+  showToast("All chats cleared ✅", false);
+  closeModal("settingsModal");
   newChat();
 }
 
 async function loadMemories() {
   if (!window.currentUser) return;
   try {
-    const res = await fetch("/api/memory/get", {
+    var res = await fetch("/api/memory/get", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ user_id: window.currentUser.uid })
     });
-    const data = await res.json();
-    const dashboard = document.getElementById("memoryDashboard");
+    var data = await res.json();
+    var dashboard = document.getElementById("memoryDashboard");
     dashboard.innerHTML = "";
     if (!data.memory || Object.keys(data.memory).length === 0) {
-      dashboard.innerHTML = '<p style="text-align:center;color:#6b7280">Abhi tak koi memory save nahi hui</p>';
+      dashboard.innerHTML = '<p style="text-align:center;color:#6b7280;padding:20px">Abhi tak koi memory save nahi hui. Chat karein aur apne baare mein batayein!</p>';
       return;
     }
-    const labels = {name:"👤 Name",age:"🎂 Age",work:"💼 Work",hobby:"🎮 Hobby",favorite_food:"🍔 Food"};
-    Object.entries(data.memory).forEach(([key, value]) => {
-      const div = document.createElement("div");
+    var labels = {name:"👤 Name", age:"🎂 Age", work:"💼 Work", hobby:"🎮 Hobby", favorite_food:"🍔 Favorite Food"};
+    Object.entries(data.memory).forEach(function(entry) {
+      var key = entry[0];
+      var value = entry[1];
+      var div = document.createElement("div");
       div.className = "memory-item";
-      div.innerHTML = `<div><div class="label">${labels[key] || key}</div><div class="value">${value}</div></div><button class="del-mem" onclick="deleteMemoryField('${key}')">Delete</button>`;
+      div.innerHTML = '<div><div class="label">' + (labels[key] || key) + '</div><div class="value">' + value + '</div></div><button class="del-mem" onclick="deleteMemoryField(\'' + key + '\')">Delete</button>';
       dashboard.appendChild(div);
     });
-  } catch(e) { console.log(e); }
+  } catch(e) { console.log("loadMemories error:", e); }
 }
 
 async function loadMemoriesQuiet() {
   if (!window.currentUser) return;
   try {
-    const res = await fetch("/api/memory/get", {
+    var res = await fetch("/api/memory/get", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ user_id: window.currentUser.uid })
     });
-    const data = await res.json();
+    var data = await res.json();
     if (data.memory && data.memory.name) {
       document.getElementById("welcomeName").innerText = data.memory.name.split(" ")[0];
     }
@@ -514,37 +528,37 @@ async function loadMemoriesQuiet() {
 }
 
 async function deleteMemoryField(field) {
-  if (!confirm(`${field} delete karein?`)) return;
+  if (!confirm(field + " delete karein?")) return;
   await fetch("/api/memory/delete-field", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ user_id: window.currentUser.uid, field: field })
   });
-  showToast("Memory deleted ✅");
+  showToast("Memory deleted ✅", false);
   loadMemories();
 }
 
 async function clearAllMemories() {
-  if (!confirm("Saari memories delete karein?")) return;
+  if (!confirm("Saari memories delete karein? Yeh undo nahi hoga!")) return;
   await fetch("/api/memory/clear", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ user_id: window.currentUser.uid })
   });
-  showToast("All memories cleared ✅");
-  closeModal('memoryModal');
-  closeModal('settingsModal');
+  showToast("All memories cleared ✅", false);
+  closeModal("memoryModal");
+  closeModal("settingsModal");
 }
 
 async function loadStats() {
   if (!window.currentUser) return;
   try {
-    const res = await fetch("/api/stats", {
+    var res = await fetch("/api/stats", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ user_id: window.currentUser.uid })
     });
-    const data = await res.json();
+    var data = await res.json();
     document.getElementById("statMemories").innerText = data.memory_count || 0;
     document.getElementById("statChats").innerText = data.chat_count || 0;
     document.getElementById("statMessages").innerText = data.message_count || 0;
@@ -553,23 +567,23 @@ async function loadStats() {
 
 function toggleVoice() {
   voiceEnabled = !voiceEnabled;
-  const btn = document.getElementById("voiceToggle");
+  var btn = document.getElementById("voiceToggle");
   if (voiceEnabled) {
     btn.innerText = "🔊 Voice ON";
     btn.classList.remove("off");
-    showToast("Voice enabled ✅");
+    showToast("Voice enabled ✅", false);
   } else {
     btn.innerText = "🔇 Voice OFF";
     btn.classList.add("off");
     speechSynthesis.cancel();
-    showToast("Voice disabled");
+    showToast("Voice disabled", false);
   }
 }
 
 function addMessage(text, type) {
-  const welcome = document.getElementById("welcome");
+  var welcome = document.getElementById("welcome");
   if (welcome) welcome.remove();
-  const div = document.createElement("div");
+  var div = document.createElement("div");
   div.className = "message " + type;
   div.innerText = text;
   chatDiv.appendChild(div);
@@ -578,7 +592,7 @@ function addMessage(text, type) {
 }
 
 function addTypingIndicator() {
-  const div = document.createElement("div");
+  var div = document.createElement("div");
   div.className = "typing";
   div.id = "typingIndicator";
   div.innerHTML = "<span></span><span></span><span></span>";
@@ -587,7 +601,7 @@ function addTypingIndicator() {
 }
 
 function removeTypingIndicator() {
-  const el = document.getElementById("typingIndicator");
+  var el = document.getElementById("typingIndicator");
   if (el) el.remove();
 }
 
@@ -600,58 +614,58 @@ async function sendMessage() {
   if (isWaiting) return;
   speechSynthesis.cancel();
   if (!window.currentUser) { showToast("Please login first", true); return; }
-  
-  const input = document.getElementById("input");
-  const message = input.value.trim();
+
+  var input = document.getElementById("input");
+  var message = input.value.trim();
   if (!message) return;
 
   addMessage(message, "user");
   input.value = "";
   addTypingIndicator();
-  
+
   isWaiting = true;
   document.getElementById("sendBtn").disabled = true;
 
   try {
-    const res = await fetch("/api/chat", {
+    var res = await fetch("/api/chat", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ 
-        user_id: window.currentUser.uid, 
+      body: JSON.stringify({
+        user_id: window.currentUser.uid,
         chat_id: currentChatId,
         message: message
       })
     });
-    
+
     removeTypingIndicator();
-    
+
     if (!res.ok) {
-      addMessage("⚠️ Server error: " + res.status, "bot");
+      addMessage("⚠️ Server error: " + res.status + ". Kripya phir try karein.", "bot");
       return;
     }
 
-    const data = await res.json();
-    const reply = data.reply || "Koi reply nahi mila";
-    
+    var data = await res.json();
+    var reply = data.reply || "Koi reply nahi mila";
+
     if (data.chat_id) currentChatId = data.chat_id;
-    
+
     addMessage(reply, "bot");
-    
+
     if (voiceEnabled) speak(reply);
-    
+
     if (data.memory_saved) {
-      showToast("💾 Memory saved!");
+      showToast("💾 Memory saved!", false);
       loadMemoriesQuiet();
     }
-    
+
     loadChats();
-    
+
   } catch (e) {
     removeTypingIndicator();
     if (!navigator.onLine) {
-      addMessage("⚠️ Internet connection check karein", "bot");
+      addMessage("⚠️ Internet connection check karein aur phir try karein.", "bot");
     } else {
-      addMessage("⚠️ Error: " + e.message, "bot");
+      addMessage("⚠️ Error: " + e.message + ". Kripya phir try karein.", "bot");
     }
   } finally {
     isWaiting = false;
@@ -661,35 +675,36 @@ async function sendMessage() {
 
 function startVoice() {
   speechSynthesis.cancel();
-  if (!("webkitSpeechRecognition" in window)) { 
-    showToast("Voice not supported in this browser", true); 
-    return; 
+  if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+    showToast("Voice not supported in this browser", true);
+    return;
   }
-  const btn = document.getElementById("voiceBtn");
-  const r = new webkitSpeechRecognition();
+  var btn = document.getElementById("voiceBtn");
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var r = new SpeechRecognition();
   r.lang = "hi-IN";
   r.continuous = false;
   r.interimResults = false;
-  
+
   btn.classList.add("listening");
-  
-  r.onresult = e => { 
+
+  r.onresult = function(e) {
     document.getElementById("input").value = e.results[0][0].transcript;
     btn.classList.remove("listening");
   };
-  r.onerror = () => {
+  r.onerror = function() {
     btn.classList.remove("listening");
     showToast("Voice error, try again", true);
   };
-  r.onend = () => btn.classList.remove("listening");
-  
+  r.onend = function() { btn.classList.remove("listening"); };
+
   try { r.start(); } catch(e) { btn.classList.remove("listening"); }
 }
 
 function speak(text) {
   if (!voiceEnabled) return;
   speechSynthesis.cancel();
-  let cleanText = text
+  var cleanText = text
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/\*(.*?)\*/g, "$1")
     .replace(/`(.*?)`/g, "$1")
@@ -698,78 +713,93 @@ function speak(text) {
     .replace(/^\s*[-*+•]\s/gm, "")
     .replace(/[#*_~`>]/g, "")
     .trim();
-  const s = new SpeechSynthesisUtterance(cleanText);
+  if (!cleanText) return;
+  var s = new SpeechSynthesisUtterance(cleanText);
   s.lang = "hi-IN";
   s.rate = 1.0;
-  const voices = speechSynthesis.getVoices();
-  const hindiVoice = voices.find(v => v.lang.includes("hi"));
+  var voices = speechSynthesis.getVoices();
+  var hindiVoice = voices.find(function(v) { return v.lang.includes("hi"); });
   if (hindiVoice) s.voice = hindiVoice;
   speechSynthesis.speak(s);
 }
 
-// Feedback
-document.querySelectorAll(".star").forEach(star => {
-  star.addEventListener("click", () => {
+// Star rating
+document.querySelectorAll(".star").forEach(function(star) {
+  star.addEventListener("click", function() {
     selectedRating = parseInt(star.dataset.rating);
-    document.querySelectorAll(".star").forEach(s => {
-      s.classList.toggle("active", parseInt(s.dataset.rating) <= selectedRating);
+    document.querySelectorAll(".star").forEach(function(s) {
+      if (parseInt(s.dataset.rating) <= selectedRating) {
+        s.classList.add("active");
+      } else {
+        s.classList.remove("active");
+      }
     });
   });
 });
 
 async function submitFeedback() {
-  if (selectedRating === 0) { showToast("Rating dijiye", true); return; }
-  const text = document.getElementById("feedbackText").value.trim();
+  if (selectedRating === 0) { showToast("Please give a rating", true); return; }
+  var text = document.getElementById("feedbackText").value.trim();
   try {
     await fetch("/api/feedback", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ 
-        user_id: window.currentUser.uid, 
-        rating: selectedRating, 
-        message: text 
+      body: JSON.stringify({
+        user_id: window.currentUser.uid,
+        rating: selectedRating,
+        message: text
       })
     });
-    showToast("Thank you for feedback! 🙏");
-    closeModal('feedbackModal');
+    showToast("Thank you for feedback! 🙏", false);
+    closeModal("feedbackModal");
     document.getElementById("feedbackText").value = "";
     selectedRating = 0;
-    document.querySelectorAll(".star").forEach(s => s.classList.remove("active"));
-  } catch(e) { showToast("Feedback failed", true); }
+    document.querySelectorAll(".star").forEach(function(s) { s.classList.remove("active"); });
+  } catch(e) { showToast("Feedback failed, try again", true); }
 }
 
-document.getElementById("input").addEventListener("keypress", e => {
+// Enter key to send
+document.getElementById("input").addEventListener("keypress", function(e) {
   if (e.key === "Enter") sendMessage();
 });
 
+// Stop speech on typing
+document.getElementById("input").addEventListener("input", function() {
+  if (speechSynthesis.speaking) speechSynthesis.cancel();
+});
+
 // Online/Offline detection
-window.addEventListener("offline", () => showToast("⚠️ Internet disconnected", true));
-window.addEventListener("online", () => showToast("✅ Internet connected"));
+window.addEventListener("offline", function() { showToast("⚠️ Internet disconnected!", true); });
+window.addEventListener("online", function() { showToast("✅ Internet connected!", false); });
 
 // PWA Install
-let deferredPrompt;
-window.addEventListener("beforeinstallprompt", e => {
+var deferredPrompt;
+window.addEventListener("beforeinstallprompt", function(e) {
   e.preventDefault();
   deferredPrompt = e;
   document.getElementById("installBtn").style.display = "block";
 });
 
-async function installApp() {
+function installApp() {
   if (deferredPrompt) {
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") document.getElementById("installBtn").style.display = "none";
-    deferredPrompt = null;
-  } else showToast("Already installed");
+    deferredPrompt.userChoice.then(function(result) {
+      if (result.outcome === "accepted") document.getElementById("installBtn").style.display = "none";
+      deferredPrompt = null;
+    });
+  } else {
+    showToast("Already installed or not supported", false);
+  }
 }
 
-window.addEventListener("appinstalled", () => {
+window.addEventListener("appinstalled", function() {
   document.getElementById("installBtn").style.display = "none";
-  showToast("App installed! 🎉");
+  showToast("App installed! 🎉", false);
 });
 
+// Service Worker
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+  navigator.serviceWorker.register("/service-worker.js").catch(function() {});
 }
 </script>
 
