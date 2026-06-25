@@ -34,9 +34,48 @@ ILLEGAL_KEYWORDS = [
     "how to hack", "hack kaise kare", "hacking tutorial",
     "kill someone", "murder kaise", "poison dena",
     "drugs kaise banaye", "meth banana", "cocaine banana",
-    "child porn", "child abuse",
+    "child porn", "child abuse", "child sex",
     "terrorist", "terrorism",
     "suicide kaise", "khudkhushi kaise"
+]
+
+# 🚫 EXPLICIT ADULT CONTENT BLOCKER (Like ChatGPT)
+EXPLICIT_BLOCKED = [
+    # Pornography
+    "porn", "pornography", "xxx video", "blue film", "blue movie",
+    "sexy video", "nude video", "naked video", "adult video",
+    
+    # Explicit sexual acts
+    "sex kaise kare", "sex karne ka tarika", "how to have sex",
+    "sex position", "sex scene", "sexual position",
+    "masturbation kaise", "masturbate kaise", "hand practice",
+    "orgasm kaise", "climax kaise",
+    
+    # Explicit content requests
+    "send nudes", "nude photo", "naked photo", "naked pic",
+    "boobs dikhao", "breast show", "private parts dikhao",
+    "lund", "chut", "gaand", "bhosdi", "madarchod", "behenchod",
+    
+    # Adult industry
+    "escort service", "call girl", "prostitute", "randi",
+    "sex worker", "vesya",
+    
+    # Erotic content
+    "erotic story", "sex story", "chudai story", "sex chat",
+    "sexting", "dirty talk", "horny chat",
+    
+    # Inappropriate roleplay
+    "be my girlfriend sexually", "romantic sexual",
+    "act as my lover sexually"
+]
+
+# 🎓 EDUCATIONAL TOPICS (Allow with disclaimer)
+EDUCATIONAL_HEALTH = [
+    "condom", "contraception", "birth control", "pregnancy",
+    "periods", "menstruation", "puberty", "body changes",
+    "reproductive system", "sex education", "std", "sti",
+    "hiv", "aids", "safe sex education",
+    "menopause", "hormones", "fertility"
 ]
 
 CREATOR_QUESTIONS = [
@@ -66,9 +105,7 @@ SHORT_REPLY_TRIGGERS = ["hi", "hello", "hey", "hii", "hlo", "bye", "good night",
                         "haan", "nahi", "kaise ho", "how are you", "what's up", "whats up",
                         "kya kar rahe", "kya karre", "kya karri", "kya kar", "kya hal", "yo"]
 
-# 🌐 COMPREHENSIVE HINGLISH/HINDI WORD LIST
 HINGLISH_INDICATORS = {
-    # Verbs
     "hai", "hain", "ho", "hoon", "hu", "tha", "thi", "the", "raha", "rahi", "rahe",
     "karna", "karta", "karti", "karte", "karke", "karo", "karu", "karunga", "karenge",
     "kiya", "kiye", "kar", "kara", "karri", "karra", "kar rha", "kar rhi",
@@ -84,8 +121,6 @@ HINGLISH_INDICATORS = {
     "milna", "milta", "milti", "milo", "mila", "mili",
     "padhna", "padhta", "padhti", "padho", "padha", "padhi",
     "likhna", "likhta", "likhti", "likho", "likha", "likhi",
-    
-    # Pronouns
     "main", "mai", "mera", "meri", "mere", "mujhe", "mujhse", "mujhko",
     "tum", "tera", "teri", "tere", "tujhe", "tujhse", "tumhe", "tumse",
     "aap", "aapka", "aapki", "aapke", "aapko", "aapse",
@@ -93,12 +128,8 @@ HINGLISH_INDICATORS = {
     "ye", "yeh", "iska", "iski", "iske", "ise", "isko", "isse",
     "hum", "humara", "humari", "humare", "humko", "humse",
     "unka", "unki", "unke", "unko", "unse",
-    
-    # Question words
     "kya", "kyun", "kyu", "kyo", "kyon", "kahan", "kahaan", "kab", "kaise",
     "kaun", "kon", "konsa", "kitna", "kitne", "kitni",
-    
-    # Common Hindi words
     "nahi", "nahin", "haan", "han", "ji", "achha", "accha", "acha",
     "thik", "tik", "theek", "bhai", "yaar", "dost", "ji",
     "kuch", "kuchh", "kucch", "sab", "saara", "saare",
@@ -110,17 +141,11 @@ HINGLISH_INDICATORS = {
     "bahut", "thoda", "thodi", "zyada", "kam",
     "wala", "wali", "wale", "valas",
     "chal", "chalo", "chal raha", "chal rahi",
-    
-    # Hinglish slang
     "bro", "bruh", "boss", "yr", "sahi", "galat", "fast",
     "scene", "vibe", "mood", "chill", "lit", "mast",
-    
-    # SMS/Chat shortcuts
     "q", "k", "h", "hu", "krna", "krta", "krti", "krke", "kr",
     "rha", "rhi", "rhe", "ho gya", "ho gyi", "ho gye",
     "tha", "thi", "the", "thy",
-    
-    # Common phrases
     "kya hal", "kya haal", "kya scene", "kya chal", "kaisa hai",
     "theek hu", "thik hu", "badhiya", "fantastic", "mast hai",
     "bata", "batao", "batade", "bataya",
@@ -131,49 +156,38 @@ HINGLISH_INDICATORS = {
 
 
 def detect_language(message: str) -> str:
-    """SUPER ACCURATE language detection"""
     msg = message.lower().strip()
     
     if not msg:
         return "english"
 
-    # 1. Devanagari script = Hindi
     if re.search(r'[\u0900-\u097F]', message):
         return "hindi"
 
-    # 2. Clean message — remove punctuation
     clean_msg = re.sub(r'[^\w\s]', ' ', msg)
     words = clean_msg.split()
     
     if not words:
         return "english"
 
-    # 3. Count Hinglish words
     hinglish_count = 0
     for word in words:
         if word in HINGLISH_INDICATORS:
             hinglish_count += 1
-        # Check Hindi endings (words ending with common Hindi suffixes)
         elif len(word) > 2 and word.endswith(('na', 'ne', 'ni', 'ti', 'ta', 'te', 'ga', 'gi', 'ge', 'ke', 'ki', 'ka', 'on', 'an', 'in')):
-            # Common Hindi patterns
             if word not in ['the', 'one', 'can', 'man', 'pan', 'gone', 'done', 'tone', 'bone', 'phone', 'line', 'time', 'mine', 'fine', 'wine', 'nine']:
                 hinglish_count += 0.5
 
-    # 4. Calculate ratio
     ratio = hinglish_count / len(words)
     
     print(f"🔍 Language Detection: '{msg[:50]}' → Hinglish ratio: {ratio:.2f} ({hinglish_count}/{len(words)})")
 
-    # 5. Decision logic
-    # If even 1 Hinglish word in short message → Hinglish
     if len(words) <= 3 and hinglish_count >= 1:
         return "hinglish"
     
-    # 15%+ Hinglish = Hinglish
     if ratio >= 0.15:
         return "hinglish"
     
-    # Pure English check
     return "english"
 
 
@@ -185,6 +199,20 @@ def is_short_reply_message(message: str) -> bool:
 def is_illegal_content(message: str) -> bool:
     msg_lower = message.lower()
     return any(keyword in msg_lower for keyword in ILLEGAL_KEYWORDS)
+
+
+# 🚫 NEW: Check explicit adult content
+def is_explicit_content(message: str) -> bool:
+    """Check if user is asking for explicit/adult content"""
+    msg_lower = message.lower()
+    return any(keyword in msg_lower for keyword in EXPLICIT_BLOCKED)
+
+
+# 🎓 NEW: Check if it's educational health topic
+def is_educational_health(message: str) -> bool:
+    """Check if it's a legitimate health/education question"""
+    msg_lower = message.lower()
+    return any(keyword in msg_lower for keyword in EDUCATIONAL_HEALTH)
 
 
 def is_creator_question(message: str) -> bool:
@@ -323,8 +351,46 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
     lang = detect_language(message)
     print(f"🌐 Detected language: {lang.upper()}")
 
+    # 🚫 Check illegal content
     if is_illegal_content(message):
-        reply = "Sorry, can't help with this topic. Try something else!" if lang == "english" else "Sorry, is topic pe help nahi kar sakta. Kuch aur puchein!"
+        if lang == "english":
+            reply = "I can't help with this topic. It involves illegal or harmful content. Please ask something else!"
+        else:
+            reply = "Sorry, is topic pe help nahi kar sakta. Ye illegal ya harmful content hai. Kuch aur puchein!"
+        return {"reply": reply, "memory_saved": False, "memory": memory}
+
+    # 🚫 NEW: Check explicit adult content (like ChatGPT does)
+    if is_explicit_content(message):
+        if lang == "english":
+            reply = """I can't help with explicit or adult content. 
+
+If you have questions about:
+• **Health/Education** → Consult a doctor or visit trusted medical websites
+• **Relationships** → I can help with general relationship advice
+• **Personal concerns** → Speak with a counselor or trusted person
+
+Is there something else I can help you with? I'm great at:
+• 📚 Studies & homework
+• 💻 Coding & technology  
+• 💼 Business & career advice
+• 🎨 Creative projects
+• 🧠 General knowledge"""
+        else:
+            reply = """Sorry, main is type ke explicit content mein help nahi kar sakta.
+
+Agar aap puchna chahte hain:
+• **Health/Education** → Doctor se consult karein ya trusted medical websites dekhein
+• **Relationships** → General relationship advice de sakta hoon
+• **Personal issues** → Counselor ya trusted person se baat karein
+
+Aur kuch help chahiye? Main ye sab achhe se kar sakta hoon:
+• 📚 Padhai aur homework
+• 💻 Coding aur technology
+• 💼 Business aur career
+• 🎨 Creative projects
+• 🧠 General knowledge
+
+Kya puchna chahenge?"""
         return {"reply": reply, "memory_saved": False, "memory": memory}
 
     if is_creator_question(message):
@@ -380,8 +446,9 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
     memory_text = "\n".join(info_parts) if info_parts else "No info saved yet"
 
     is_short = is_short_reply_message(message)
+    is_health_topic = is_educational_health(message)
 
-    # 🌐 STRICT LANGUAGE INSTRUCTION
+    # 🌐 LANGUAGE INSTRUCTION
     if lang == "english":
         lang_instruction = """🌐 LANGUAGE LOCK: USER WROTE IN PURE ENGLISH.
 
@@ -390,12 +457,6 @@ async def process_message(user_id: str, message: str, history: list = None) -> d
 - DO NOT use ANY Hindi words like "hai", "aap", "kya", "mein", "ko", "ka", "ki"
 - DO NOT use Hinglish at all
 - Write like a native English speaker
-- Even greetings: "Hey!" not "Hey bhai!"
-
-EXAMPLE:
-User: "What is love?"
-✅ "Love is a deep emotion involving..."
-❌ "Love ek deep emotion hai jisme..."
 """
     elif lang == "hindi":
         lang_instruction = """🌐 LANGUAGE LOCK: USER WROTE IN HINDI/DEVANAGARI.
@@ -412,18 +473,6 @@ User: "What is love?"
 - DO NOT reply in PURE English
 - DO NOT reply in PURE Hindi
 - Use natural Hinglish like Indian people speak
-- Use words like: hai, hain, aap, kya, mein, ko, ka, ki, se, par
-- Mix English technical words with Hindi structure
-
-EXAMPLE:
-User: "Love kya hai?"
-✅ "Love ek bahut hi powerful emotion hai jo deep affection aur care ko represent karta hai..."
-❌ "Love is a powerful emotion that represents deep affection..." (TOO ENGLISH)
-❌ "Prem ek bahut shakti shaali bhavna hai..." (TOO PURE HINDI)
-
-User: "Coding kya hota h"
-✅ "Coding ek skill hai jisme aap computers ko instructions dete ho. Yeh programming languages jaise Python, Java ka use karke hoti hai..."
-❌ "Coding is a skill where you give instructions to computers..." (WRONG - too English)
 """
 
     if is_short:
@@ -436,7 +485,29 @@ User: "Coding kya hota h"
 - Give examples
 - End with follow-up question"""
 
-    system_prompt = f"""You are an intelligent AI assistant — like ChatGPT or Claude.
+    # 🎓 Health topic disclaimer
+    health_instruction = ""
+    if is_health_topic:
+        health_instruction = """
+
+🏥 HEALTH TOPIC DETECTED:
+This is a legitimate educational health question. Provide:
+1. Accurate educational information (general level)
+2. ALWAYS recommend consulting a doctor/healthcare professional
+3. Keep response factual and educational
+4. Do NOT give specific medical advice
+5. Add disclaimer: "Please consult a doctor for personal medical advice"
+6. Keep tone professional and informative (like Wikipedia/health websites)
+"""
+
+    system_prompt = f"""You are Memory AI Pro — an intelligent, helpful AI assistant for ALL ages and users (like ChatGPT or Claude).
+
+👥 YOUR USERS INCLUDE:
+- 📚 Students (kids, teenagers) - homework, studies, learning
+- 💼 Professionals - business, career, productivity  
+- 👨‍👩‍👧 Families - daily life, recipes, advice
+- 🧓 Elderly - simple help, information
+- 🎨 Creators - ideas, writing, design
 
 USER'S SAVED INFO:
 {memory_text}
@@ -444,20 +515,41 @@ USER'S SAVED INFO:
 {lang_instruction}
 
 📏 {length_instruction}
+{health_instruction}
 
-⚡ EXPERTISE: Science, Tech, Coding, Health, Relationships, Psychology, History, Business — EVERYTHING.
+⚡ YOUR EXPERTISE (Help with EVERYTHING useful):
+✅ Education: Math, Science, History, Languages, Homework
+✅ Technology: Coding, Apps, Software, AI, Internet
+✅ Career: Jobs, Interviews, Resume, Skills, Business
+✅ Health: General wellness, fitness, nutrition (with doctor disclaimer)
+✅ Relationships: General advice, communication, family
+✅ Creative: Writing, Art, Music, Design ideas
+✅ Daily Life: Recipes, Travel, Shopping, Productivity
+✅ Knowledge: Current affairs, History, Geography, Science
+✅ Personal Growth: Motivation, Self-improvement, Goals
+✅ Entertainment: Movies, Books, Games (general recommendations)
+
+🛡️ SAFETY RULES (Like ChatGPT):
+❌ NEVER generate sexually explicit content
+❌ NEVER provide pornographic material
+❌ NEVER help with illegal activities
+❌ NEVER promote violence or harm
+❌ NEVER give specific medical/legal/financial advice (recommend professionals)
+✅ ALWAYS be family-friendly and safe for all ages
+✅ ALWAYS add disclaimers for health/legal/financial topics
+✅ ALWAYS recommend professionals for personal serious matters
 
 📋 RESPONSE FORMAT FOR DETAILED ANSWERS:
 
 **Introduction** (2-3 lines)
 
-**Key Points/Types**
+**Key Points**
 • Point 1
-• Point 2
+• Point 2  
 • Point 3
 
 **How it works / Why important**
-(Detailed explanation)
+(Detailed explanation with examples)
 
 **Examples**
 (Real-world examples)
@@ -465,22 +557,25 @@ USER'S SAVED INFO:
 **Conclusion + Follow-up question**
 
 ❌ NEVER DO:
-- ❌ NEVER mix languages incorrectly
-- ❌ NEVER say "Namaste"
-- ❌ NEVER mention "Deepak Rawat" unless asked
-- ❌ NEVER use "bhai/yaar"
-- ❌ NEVER use 🙏 emoji
-- ❌ NEVER give one-line answer to real questions
-- ❌ NEVER switch from user's language
+- ❌ Mix languages incorrectly
+- ❌ Say "Namaste"
+- ❌ Mention "Deepak Rawat" unless asked
+- ❌ Use "bhai/yaar"
+- ❌ Use 🙏 emoji
+- ❌ Give one-line answer to real questions
+- ❌ Switch from user's language
+- ❌ Generate adult/explicit content
 
 ✅ ALWAYS DO:
-- ✅ STRICTLY match user's language (English→English, Hinglish→Hinglish)
+- ✅ Match user's language (English→English, Hinglish→Hinglish)
 - ✅ Use markdown formatting (bold, bullets, headings)
 - ✅ Give detailed structured responses
 - ✅ Use max 1-2 emojis
-- ✅ Be helpful and informative
+- ✅ Be helpful, friendly, and informative
+- ✅ Be family-friendly (safe for kids and adults)
+- ✅ Add disclaimers for sensitive topics
 
-🌐 LANGUAGE IS LAW. FOLLOW IT 100%."""
+🌐 LANGUAGE IS LAW. SAFETY IS PRIORITY. HELPFULNESS IS GOAL."""
 
     messages_list = [{"role": "system", "content": system_prompt}]
 
